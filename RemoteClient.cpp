@@ -27,7 +27,9 @@ int main() {
     if (SERVER_IP_ADDRESS[0] == '#')
     {
         std::cerr << "Failed to find IP Address!";
-        return 0;
+        closesocket(clientSocket);
+        WSACleanup();
+        return 1;
     }
 
     sockaddr_in serverAddr;
