@@ -1,0 +1,5 @@
+-> Chạy bằng VS Tím
+-> Tạo 2 cái Project Server với Client
+-> Cái nào cũng có Header.h
+-> Yêu cầu: Vào Control Panel -> Network and Internet -> Network and Sharing Center -> Change Adapter Settings -> Disable tất cả các mạng không dùng. (Control Panel\Network and Internet\Network Connections)
+-> Chạy code
