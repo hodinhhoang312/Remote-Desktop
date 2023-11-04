@@ -62,8 +62,6 @@ char* ListIpAddresses() {
                     SOCKADDR_IN* ipv4 = reinterpret_cast<SOCKADDR_IN*>(address->Address.lpSockaddr);
                     inet_ntop(AF_INET, &(ipv4->sin_addr), res, 16);
 
-                    printf("%s\n", res);
-
                     //free memory
                     free(adapter_addresses);
                     adapter_addresses = NULL;
