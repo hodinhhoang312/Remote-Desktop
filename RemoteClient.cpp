@@ -1,77 +1,74 @@
-#pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <iostream>
 #include <winsock2.h>
-#include <iphlpapi.h>
-#include <stdio.h>
-#include <ws2tcpip.h>
+#include <string>
 
-// Link with Iphlpapi.lib and ws2_32.lib
-#pragma comment(lib, "Iphlpapi.lib")
-#pragma comment(lib, "ws2_32.lib")
+#include "Header.h"
 
-char* ListIpAddresses() {
 
-    char* res = new char[16];
-    res[0] = '#';
+#pragma comment(lib, "ws2_32.lib") // Link with the Winsock library
 
-    IP_ADAPTER_ADDRESSES* adapter_addresses(NULL);
-    IP_ADAPTER_ADDRESSES* adapter(NULL);
+int main() {
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "Failed to initialize Winsock." << std::endl;
+        return 1;
+    }
 
-    DWORD adapter_addresses_buffer_size = 16 * 1024;
+    // Create a socket
+    SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientSocket == INVALID_SOCKET) {
+        std::cerr << "Failed to create a socket." << std::endl;
+        WSACleanup();
+        return 1;
+    }
 
-    // Get adapter addresses
-    for (int attempts = 0; attempts != 3; ++attempts) {
-        adapter_addresses = (IP_ADAPTER_ADDRESSES*)malloc(adapter_addresses_buffer_size);
+    char* SERVER_IP_ADDRESS = ListIpAddresses();
+    if (SERVER_IP_ADDRESS[0] == '#')
+    {
+        std::cerr << "Failed to find IP Address!";
+        return 0;
+    }
 
-        DWORD error = ::GetAdaptersAddresses(AF_UNSPEC,
-            GAA_FLAG_SKIP_ANYCAST |
-            GAA_FLAG_SKIP_MULTICAST |
-            GAA_FLAG_SKIP_DNS_SERVER |
-            GAA_FLAG_SKIP_FRIENDLY_NAME,
-            NULL,
-            adapter_addresses,
-            &adapter_addresses_buffer_size);
+    sockaddr_in serverAddr;
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS); // Địa chỉ IP của máy chủ (127.0.0.1 cho máy chủ trên cùng một máy)
+    serverAddr.sin_port = htons(12345); // Sử dụng cùng một cổng (port 12345)
 
-        if (ERROR_SUCCESS == error) {
+    // Connect to the server
+    if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+        std::cerr << "Failed to connect to the server." << std::endl;
+        closesocket(clientSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    std::cout << "Connected to the server!" << std::endl;
+
+    //Text
+    char buffer[1024];
+
+    while (true) {
+        std::string message;
+        std::cout << "Client: ";
+        std::getline(std::cin, message);
+
+        send(clientSocket, message.c_str(), message.length(), 0);
+
+        int bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
+        if (bytesRead <= 0) {
+            std::cerr << "Connection closed by server." << std::endl;
             break;
         }
-        else if (ERROR_BUFFER_OVERFLOW == error) {
-            // Try again with the new size
-            free(adapter_addresses);
-            adapter_addresses = NULL;
-            continue;
-        }
-        else {
-            // Unexpected error code - log and throw
-            free(adapter_addresses);
-            adapter_addresses = NULL;
-            return res;
-        }
+
+        buffer[bytesRead] = '\0';
+        std::cout << "Server: " << buffer << std::endl;
     }
+    //
 
-    // Iterate through all of the adapters
-    for (adapter = adapter_addresses; NULL != adapter; adapter = adapter->Next) {
-        // Skip loopback adapters
-        if (IF_TYPE_SOFTWARE_LOOPBACK == adapter->IfType) continue;
+    // Close the socket
+    closesocket(clientSocket);
+    WSACleanup();
 
-        if (adapter->OperStatus == IfOperStatusUp) {
-
-            // Parse all IPv4 addresses
-            for (IP_ADAPTER_UNICAST_ADDRESS* address = adapter->FirstUnicastAddress; NULL != address; address = address->Next) {
-                auto family = address->Address.lpSockaddr->sa_family;
-                if (AF_INET == family) {
-                    SOCKADDR_IN* ipv4 = reinterpret_cast<SOCKADDR_IN*>(address->Address.lpSockaddr);
-                    inet_ntop(AF_INET, &(ipv4->sin_addr), res, 16);
-
-                    //free memory
-                    free(adapter_addresses);
-                    adapter_addresses = NULL;
-
-                    return res;
-                }
-            }
-        }
-    }
-
-    return res;
+    return 0;
 }
