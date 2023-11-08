@@ -23,29 +23,31 @@ int main() {
         return 1;
     }
 
-    char* SERVER_IP_ADDRESS = ListIpAddresses();
-    if (SERVER_IP_ADDRESS[0] == '#')
-    {
-        std::cerr << "Failed to find IP Address!";
-        closesocket(clientSocket);
-        WSACleanup();
-        return 1;
-    }
-
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS); // Địa chỉ IP của máy chủ (127.0.0.1 cho máy chủ trên cùng một máy)
     serverAddr.sin_port = htons(12345); // Sử dụng cùng một cổng (port 12345)
+    char SERVER_IP_ADDRESS[16];
 
     // Connect to the server
-    if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        std::cerr << "Failed to connect to the server." << std::endl;
-        closesocket(clientSocket);
-        WSACleanup();
-        return 1;
+    while(1)
+    {
+
+        if (RequestForIpAddress(SERVER_IP_ADDRESS))
+        {   
+            serverAddr.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS);
+            if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+                std::cerr << "Failed to connect to the server." << std::endl;
+            }
+            else
+            {
+                std::cout << "Connected to the server!" << std::endl;
+                break;
+            }
+        }
+        else
+            std::cerr << "IP server not found! Please try again!" << std::endl;
     }
 
-    std::cout << "Connected to the server!" << std::endl;
 
     //Text
     char buffer[1024];
