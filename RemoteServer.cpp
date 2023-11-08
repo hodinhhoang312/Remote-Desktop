@@ -33,6 +33,8 @@ int main() {
         return 1;
     }
 
+    PrintIPAddress();
+
     // Listen for incoming connections
     if (listen(serverSocket, 5) == SOCKET_ERROR) {
         std::cerr << "Failed to listen for incoming connections." << std::endl;
