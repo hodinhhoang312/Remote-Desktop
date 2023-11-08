@@ -3,6 +3,9 @@
 #include <iphlpapi.h>
 #include <stdio.h>
 #include <ws2tcpip.h>
+#include <vector>
+#include <regex>
+#include <iostream>
 
 // Link with Iphlpapi.lib and ws2_32.lib
 #pragma comment(lib, "Iphlpapi.lib")
@@ -62,6 +65,8 @@ char* ListIpAddresses() {
                     SOCKADDR_IN* ipv4 = reinterpret_cast<SOCKADDR_IN*>(address->Address.lpSockaddr);
                     inet_ntop(AF_INET, &(ipv4->sin_addr), res, 16);
 
+                    printf("%s\n", res);
+
                     //free memory
                     free(adapter_addresses);
                     adapter_addresses = NULL;
@@ -73,4 +78,29 @@ char* ListIpAddresses() {
     }
 
     return res;
+}
+
+
+void PrintIPAddress()
+{
+    char* name = ListIpAddresses();
+    printf("Your current IPv4 Address is: %s\n", name);
+}
+
+bool IsIPAddressValid(const char* ipAddress) {
+    // Sử dụng biểu thức chính quy (regex) để kiểm tra định dạng IP
+    std::regex ipRegex("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+        "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+        "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+        "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+
+    return std::regex_match(ipAddress, ipRegex);
+}
+
+bool RequestForIpAddress(char* ip_addr)
+{
+    printf("Nhap ip vao: ");
+    std::cin.getline(ip_addr, 16);
+
+    return true;
 }
