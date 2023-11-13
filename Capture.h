@@ -137,7 +137,7 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
 
         int receivedImageData = recv(serverSocket, (char*)tempBuf.data(), size, 0);
         if (receivedImageData != size) {
-            std::cerr << "Error: Incomplete image data received\n";
+            std::cerr << "Error: Incomplete image data received! Received size = "<<receivedImageData<<" ; Size = " << size <<"\n";
             // Xử lý lỗi khi không nhận được đủ dữ liệu ảnh mong đợi
             return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
         }
