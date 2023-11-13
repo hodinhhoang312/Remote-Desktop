@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <opencv2/opencv.hpp>
 #include <SFML/Graphics.hpp>
 #include "Header.h"
@@ -41,8 +41,8 @@ cv::Mat Capture_Screen() {
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
     // Chuyển đổi cv::Mat thành chuỗi byte
     std::vector<uchar> buf;
-    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, 5  }; // Định dạng và chất lượng ảnh
-    cv::imencode("screen.jpg", image, buf, params);
+    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, 5 }; // Định dạng và chất lượng ảnh
+    cv::imencode(".jpg", image, buf, params);
 
     // Gửi kích thước dữ liệu trước
     int size = buf.size();
@@ -90,10 +90,14 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
     int size = 0;
     recv(serverSocket, (char*)&size, sizeof(size), 0); // Nhận kích thước dữ liệu
 
-    std::vector<uchar> buf(size);
-    recv(serverSocket, (char*)buf.data(), size, 0); // Nhận dữ liệu ảnh
+    uchar* data = new uchar[size];
+    recv(serverSocket, (char*)data, size, 0); // Nhận dữ liệu ảnh
 
-    return cv::imdecode(buf, cv::IMREAD_COLOR); // Chuyển đổi dữ liệu thành cv::Mat
+    cv::Mat image = cv::imdecode(cv::Mat(1, size, CV_8U, data), cv::IMREAD_COLOR); // Chuyển đổi dữ liệu thành cv::Mat
+
+    delete[] data; // Giải phóng bộ nhớ đã cấp phát
+
+    return image;
 }
 
 sf::Image matToImage(const cv::Mat& mat) {
