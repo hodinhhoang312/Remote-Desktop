@@ -112,6 +112,7 @@ int Send_Screen(SOCKET clientSocket)
 }
 
 cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
+    bool notOKE = 0;
     int receivedSlices = 0;
     int slices = 0;
 
@@ -132,7 +133,7 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         if (receivedSize != sizeof(size)) {
             std::cerr << "Error: Incomplete data received for the image size\n";
             // Xử lý lỗi khi không nhận được đúng kích thước dữ liệu mong đợi
-            return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
+            bool notOKE = 1;
         }
 
         std::vector<uchar> tempBuf(size);
@@ -151,6 +152,12 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         std::cerr << "Slice number " << i << " received!\n";
     }
 
+    if (notOKE)
+    {
+        cv::Mat image = cv::imread("Image/Image1.jpg");
+        return image;
+    }
+
     std::cerr << "All slices received!\n";
 
     cv::Mat image = cv::imdecode(buf, cv::IMREAD_COLOR);
@@ -158,6 +165,8 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         std::cerr << "Error: Failed to create Mat from received data\n";
         // Xử lý lỗi khi không thể tạo Mat từ dữ liệu nhận được
     }
+
+
 
     return image;
 }
