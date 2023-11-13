@@ -126,7 +126,8 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
     }
 
     std::cerr << 1 << '\n';
-    return cv::imdecode(buf, cv::IMREAD_COLOR); // Chuyển đổi dữ liệu thành cv::Mat
+    cv::Mat ans = cv::imdecode(buf, cv::IMREAD_COLOR);
+    return ans;
 }
 
 sf::Image matToImage(const cv::Mat& mat) {
