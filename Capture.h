@@ -4,7 +4,7 @@
 #include "Header.h"
 
 const int fps = 60;
-const int reso = 50;
+const int reso = 30;
 int slices = reso;
 
 std::vector<uchar> buf;
