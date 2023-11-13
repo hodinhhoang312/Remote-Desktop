@@ -3,14 +3,13 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-const int fps = 5;
+const int fps = 1;
 const int reso = 50;
 const int compression_level = 0;
 int slices = reso;
 
 std::vector<uchar> buf;
 std::vector<int> params;
-std::vector<uchar> tempBuf;
 
 cv::Mat Capture_Screen() {
     int width = GetSystemMetrics(SM_CXSCREEN);
@@ -46,11 +45,12 @@ cv::Mat Capture_Screen() {
 
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
     buf.clear();
-    params = { cv::IMWRITE_PNG_COMPRESSION, compression_level };
-    cv::imencode("screen.jpg", image, buf, params);
+    std::vector<int> params = { cv::IMWRITE_PNG_COMPRESSION, 9 }; // Cấu hình nén PNG tại đây
+
+    cv::imencode(".png", image, buf, params);
 
     int totalSize = buf.size();
-    int partSize = totalSize / slices; // Kích thước mỗi phần
+    int partSize = totalSize / slices;
 
     int bytesSent = 0;
 
@@ -112,6 +112,7 @@ int Send_Screen(SOCKET clientSocket)
 }
 
 cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
+
     recv(serverSocket, (char*)&slices, sizeof(slices), 0); // Nhận số lần nhận dữ liệu
 
     buf.clear();
@@ -120,13 +121,13 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         int size = 0;
         recv(serverSocket, (char*)&size, sizeof(size), 0); // Nhận kích thước dữ liệu
 
-        tempBuf.assign(size, '.');
+        std::vector<uchar> tempBuf(size);
         recv(serverSocket, (char*)tempBuf.data(), size, 0); // Nhận dữ liệu ảnh
+
         std::cerr << "Slice number " << i << " received!\n";
         buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
     }
 
-    std::cerr << 1 << '\n';
     cv::Mat ans = cv::imdecode(buf, cv::IMREAD_COLOR);
     return ans;
 }
