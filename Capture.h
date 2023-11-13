@@ -4,7 +4,8 @@
 #include "Header.h"
 
 const int fps = 60;
-const int reso = 5;
+const int reso = 50;
+int slices = reso;
 
 cv::Mat Capture_Screen() {
     int width = GetSystemMetrics(SM_CXSCREEN);
@@ -39,19 +40,36 @@ cv::Mat Capture_Screen() {
 }
 
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
-    // Chuyển đổi cv::Mat thành chuỗi byte
     std::vector<uchar> buf;
-    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, reso }; // Định dạng và chất lượng ảnh
+    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, reso };
     cv::imencode("screen.jpg", image, buf, params);
 
-    // Gửi kích thước dữ liệu trước
-    int size = buf.size();
-    std::cerr << int(size) << '\n';
+    int totalSize = buf.size();
+    int partSize = totalSize / slices; // Kích thước mỗi phần
 
-    send(clientSocket, (char*)&size, sizeof(size), 0);
+    int bytesSent = 0;
 
-    // Gửi dữ liệu ảnh
-    int bytesSent = send(clientSocket, (char*)buf.data(), size, 0);
+    // Gửi số lần gửi dữ liệu
+    send(clientSocket, (char*)&slices, sizeof(slices), 0);
+
+    // Gửi dữ liệu ảnh theo từng phần
+    for (int i = 0; i < slices; ++i) {
+        int offset = i * partSize;
+        int size = (i == slices - 1) ? (totalSize - offset) : partSize;
+
+        std::cerr << "Sending slice " << i + 1 << " of size " << size << " bytes\n";
+
+        // Gửi kích thước dữ liệu trước
+        send(clientSocket, (char*)&size, sizeof(size), 0);
+
+        // Gửi dữ liệu ảnh
+        int bytes = send(clientSocket, (char*)(buf.data() + offset), size, 0);
+        if (bytes == -1) {
+            // Xử lý lỗi khi gửi không thành công
+            return -1;
+        }
+        bytesSent += bytes;
+    }
 
     return bytesSent;
 }
@@ -89,11 +107,19 @@ int Send_Screen(SOCKET clientSocket)
 }
 
 cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
-    int size = 0;
-    recv(serverSocket, (char*)&size, sizeof(size), 0); // Nhận kích thước dữ liệu
+    recv(serverSocket, (char*)&slices, sizeof(slices), 0); // Nhận số lần nhận dữ liệu
 
-    std::vector<uchar> buf(size);
-    recv(serverSocket, (char*)buf.data(), size, 0); // Nhận dữ liệu ảnh
+    std::vector<uchar> buf;
+
+    for (int i = 0; i < slices; ++i) {
+        int size = 0;
+        recv(serverSocket, (char*)&size, sizeof(size), 0); // Nhận kích thước dữ liệu
+
+        std::vector<uchar> tempBuf(size);
+        recv(serverSocket, (char*)tempBuf.data(), size, 0); // Nhận dữ liệu ảnh
+
+        buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
+    }
 
     return cv::imdecode(buf, cv::IMREAD_COLOR); // Chuyển đổi dữ liệu thành cv::Mat
 }
