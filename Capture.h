@@ -3,7 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-const int fps = 60;
+const int fps = 30;
 const int reso = 30;
 int slices = reso;
 
