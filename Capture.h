@@ -9,6 +9,7 @@ int slices = reso;
 
 std::vector<uchar> buf;
 std::vector<int> params;
+std::vector<uchar> tempBuf;
 
 cv::Mat Capture_Screen() {
     int width = GetSystemMetrics(SM_CXSCREEN);
@@ -43,7 +44,7 @@ cv::Mat Capture_Screen() {
 }
 
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
-    std::vector<uchar> buf;
+    
     buf.clear();
     params = { cv::IMWRITE_JPEG_QUALITY, reso };
     cv::imencode("screen.jpg", image, buf, params);
@@ -119,7 +120,7 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         int size = 0;
         recv(serverSocket, (char*)&size, sizeof(size), 0); // Nhận kích thước dữ liệu
 
-        std::vector<uchar> tempBuf(size);
+        tempBuf.assign(size,'.');
         recv(serverSocket, (char*)tempBuf.data(), size, 0); // Nhận dữ liệu ảnh
 
         buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
