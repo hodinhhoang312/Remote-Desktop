@@ -125,6 +125,7 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
     }
 
+    std::cerr << 1 << '\n';
     return cv::imdecode(buf, cv::IMREAD_COLOR); // Chuyển đổi dữ liệu thành cv::Mat
 }
 
@@ -166,11 +167,11 @@ int Recv_Screen(SOCKET serverSocket)
         std::cerr << "Image Received!\n";
         cv::waitKey(1000 / fps); // Đợi 1/24 giây (của 24 fps)
 
-        sf::Image image = matToImage(receivedImage);
-        sf::Texture texture = imageToTexture(image);
-        sf::Sprite sprite(texture);
+        sf::Image image = matToImage(receivedImage);        std::cerr << 2 << '\n';
+        sf::Texture texture = imageToTexture(image);        std::cerr << 3 << '\n';
+        sf::Sprite sprite(texture);                         std::cerr << 4 << '\n';
 
-        window.draw(sprite);
+        window.draw(sprite);                                std::cerr << 5 << '\n';
         window.display();
     }
 
