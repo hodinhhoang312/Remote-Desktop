@@ -4,7 +4,7 @@
 #include "Header.h"
 
 const int fps = 60;
-const int reso = 10;
+const int reso = 50;
 int slices = reso;
 
 std::vector<uchar> buf;
@@ -57,7 +57,6 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
     send(clientSocket, (char*)&slices, sizeof(slices), 0);
 
     for (int i = 0; i < slices; ++i) {
-        cv::waitKey(1000 / 100); // Đợi 1/24 giây (của 24 fps)
         int size = partSize + (i == slices - 1 ? remainder : 0); // Phần cuối cùng có thể cần cộng thêm phần dư
 
         int offset = i * partSize;
@@ -143,7 +142,7 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
 
         if (receivedImageData != size) {
-            std::cerr << "Error: Incomplete image data received! Received size = "<<receivedImageData<<" ; Size = " << size <<"\n";
+            std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
             // Xử lý lỗi khi không nhận được đủ dữ liệu ảnh mong đợi
             return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
         }
