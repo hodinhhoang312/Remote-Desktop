@@ -3,9 +3,12 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-const int fps = 60;
-const int reso = 50;
+const int fps = 30;
+const int reso = 30;
 int slices = reso;
+
+std::vector<uchar> buf;
+std::vector<int> params;
 
 cv::Mat Capture_Screen() {
     int width = GetSystemMetrics(SM_CXSCREEN);
@@ -41,7 +44,8 @@ cv::Mat Capture_Screen() {
 
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
     std::vector<uchar> buf;
-    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, reso };
+    buf.clear();
+    params = { cv::IMWRITE_JPEG_QUALITY, reso };
     cv::imencode("screen.jpg", image, buf, params);
 
     int totalSize = buf.size();
@@ -109,7 +113,7 @@ int Send_Screen(SOCKET clientSocket)
 cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
     recv(serverSocket, (char*)&slices, sizeof(slices), 0); // Nhận số lần nhận dữ liệu
 
-    std::vector<uchar> buf;
+    buf.clear();
 
     for (int i = 0; i < slices; ++i) {
         int size = 0;
