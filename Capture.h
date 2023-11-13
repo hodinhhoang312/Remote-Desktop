@@ -66,7 +66,8 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
         send(clientSocket, (char*)&size, sizeof(size), 0);
 
         // Gửi dữ liệu ảnh
-        int bytes = send(clientSocket, (char*)(buf.data() + offset), size, 0);
+        char* temp = (char*)(buf.data() + offset);
+        int bytes = send(clientSocket, temp, size, 0);
         if (bytes == -1) {
             // Xử lý lỗi khi gửi không thành công
             return -1;
@@ -136,6 +137,9 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         std::vector<uchar> tempBuf(size);
 
         int receivedImageData = recv(serverSocket, (char*)tempBuf.data(), size, 0);
+
+        std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
+
         if (receivedImageData != size) {
             std::cerr << "Error: Incomplete image data received! Received size = "<<receivedImageData<<" ; Size = " << size <<"\n";
             // Xử lý lỗi khi không nhận được đủ dữ liệu ảnh mong đợi
