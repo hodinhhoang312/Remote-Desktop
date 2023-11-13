@@ -3,8 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-#pragma comment(linker, "/STACK:100000000") // Đặt kích thước stack là 10MB
-
+const int fps = 60;
+const int reso = 5;
 
 cv::Mat Capture_Screen() {
     int width = GetSystemMetrics(SM_CXSCREEN);
@@ -41,11 +41,13 @@ cv::Mat Capture_Screen() {
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
     // Chuyển đổi cv::Mat thành chuỗi byte
     std::vector<uchar> buf;
-    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, 5 }; // Định dạng và chất lượng ảnh
-    cv::imencode(".jpg", image, buf, params);
+    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, reso }; // Định dạng và chất lượng ảnh
+    cv::imencode("screen.jpg", image, buf, params);
 
     // Gửi kích thước dữ liệu trước
     int size = buf.size();
+    std::cerr << int(size) << '\n';
+
     send(clientSocket, (char*)&size, sizeof(size), 0);
 
     // Gửi dữ liệu ảnh
@@ -81,7 +83,7 @@ int Send_Screen(SOCKET clientSocket)
         else {
             std::cerr << "Error: Could not read the image." << std::endl;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / fps));
     }
     return 0;
 }
@@ -90,14 +92,10 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
     int size = 0;
     recv(serverSocket, (char*)&size, sizeof(size), 0); // Nhận kích thước dữ liệu
 
-    uchar* data = new uchar[size];
-    recv(serverSocket, (char*)data, size, 0); // Nhận dữ liệu ảnh
+    std::vector<uchar> buf(size);
+    recv(serverSocket, (char*)buf.data(), size, 0); // Nhận dữ liệu ảnh
 
-    cv::Mat image = cv::imdecode(cv::Mat(1, size, CV_8U, data), cv::IMREAD_COLOR); // Chuyển đổi dữ liệu thành cv::Mat
-
-    delete[] data; // Giải phóng bộ nhớ đã cấp phát
-
-    return image;
+    return cv::imdecode(buf, cv::IMREAD_COLOR); // Chuyển đổi dữ liệu thành cv::Mat
 }
 
 sf::Image matToImage(const cv::Mat& mat) {
@@ -136,7 +134,7 @@ int Recv_Screen(SOCKET serverSocket)
         cv::Mat receivedImage = receiveMatFromSocket(serverSocket);
 
         std::cerr << "Image Received!\n";
-        cv::waitKey(1000 / 12); // Đợi 1/24 giây (của 24 fps)
+        cv::waitKey(1000 / fps); // Đợi 1/24 giây (của 24 fps)
 
         sf::Image image = matToImage(receivedImage);
         sf::Texture texture = imageToTexture(image);
