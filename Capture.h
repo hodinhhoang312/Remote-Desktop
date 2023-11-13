@@ -3,8 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-const int fps = 30;
-const int reso = 30;
+const int fps = 5;
+const int reso = 3;
 int slices = reso;
 
 std::vector<uchar> buf;
@@ -119,9 +119,9 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         int size = 0;
         recv(serverSocket, (char*)&size, sizeof(size), 0); // Nhận kích thước dữ liệu
 
-        tempBuf.assign(size,'.');
+        tempBuf.assign(size, '.');
         recv(serverSocket, (char*)tempBuf.data(), size, 0); // Nhận dữ liệu ảnh
-
+        std::cerr << "Slice number " << i << " received!\n";
         buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
     }
 
