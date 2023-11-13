@@ -44,7 +44,6 @@ cv::Mat Capture_Screen() {
 }
 
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
-    
     buf.clear();
     params = { cv::IMWRITE_JPEG_QUALITY, reso };
     cv::imencode("screen.jpg", image, buf, params);
@@ -150,6 +149,8 @@ sf::Texture imageToTexture(const sf::Image& image) {
     return texture;
 }
 
+cv::Mat receivedImage;
+
 int Recv_Screen(SOCKET serverSocket)
 {
     sf::RenderWindow window(sf::VideoMode(1920, 1030), "Remote Desktop Client"); // Resolution 1920x1080
@@ -163,7 +164,7 @@ int Recv_Screen(SOCKET serverSocket)
 
         window.clear();
 
-        cv::Mat receivedImage = receiveMatFromSocket(serverSocket);
+        receivedImage = receiveMatFromSocket(serverSocket);
 
         std::cerr << "Image Received!\n";
         cv::waitKey(1000 / fps); // Đợi 1/24 giây (của 24 fps)
