@@ -4,7 +4,7 @@
 #include "Header.h"
 
 const int fps = 240;
-const int reso = 3;
+const int reso = 10;
 int slices = reso;
 
 std::vector<uchar> buf;
@@ -57,7 +57,7 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
     send(clientSocket, (char*)&slices, sizeof(slices), 0);
 
     for (int i = 0; i < slices; ++i) {
-        cv::waitKey(1000 / 800);
+        cv::waitKey(1000 / 500);
         int size = partSize + (i == slices - 1 ? remainder : 0); // Phần cuối cùng có thể cần cộng thêm phần dư
 
         int offset = i * partSize;
