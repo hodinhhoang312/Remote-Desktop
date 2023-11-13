@@ -3,9 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-const int fps = 1;
-const int reso = 50;
-const int compression_level = 0;
+const int fps = 60;
+const int reso = 30;
 int slices = reso;
 
 std::vector<uchar> buf;
@@ -45,12 +44,11 @@ cv::Mat Capture_Screen() {
 
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
     buf.clear();
-    std::vector<int> params = { cv::IMWRITE_PNG_COMPRESSION, 9 }; // Cấu hình nén PNG tại đây
-
-    cv::imencode(".png", image, buf, params);
+    params = { cv::IMWRITE_JPEG_QUALITY, reso };
+    cv::imencode("screen.jpg", image, buf, params);
 
     int totalSize = buf.size();
-    int partSize = totalSize / slices;
+    int partSize = totalSize / slices; // Kích thước mỗi phần
 
     int bytesSent = 0;
 
@@ -112,24 +110,51 @@ int Send_Screen(SOCKET clientSocket)
 }
 
 cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
+    int receivedSlices = 0;
+    int slices = 0;
 
-    recv(serverSocket, (char*)&slices, sizeof(slices), 0); // Nhận số lần nhận dữ liệu
+    receivedSlices = recv(serverSocket, (char*)&slices, sizeof(slices), 0);
+    if (receivedSlices != sizeof(slices)) {
+        std::cerr << "Error: Incomplete data received for the number of slices\n";
+        // Xử lý lỗi khi không nhận được đúng số lượng byte mong đợi
+        return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
+    }
 
     buf.clear();
 
     for (int i = 0; i < slices; ++i) {
         int size = 0;
-        recv(serverSocket, (char*)&size, sizeof(size), 0); // Nhận kích thước dữ liệu
+        int receivedSize = 0;
+
+        receivedSize = recv(serverSocket, (char*)&size, sizeof(size), 0);
+        if (receivedSize != sizeof(size)) {
+            std::cerr << "Error: Incomplete data received for the image size\n";
+            // Xử lý lỗi khi không nhận được đúng kích thước dữ liệu mong đợi
+            return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
+        }
 
         std::vector<uchar> tempBuf(size);
-        recv(serverSocket, (char*)tempBuf.data(), size, 0); // Nhận dữ liệu ảnh
 
-        std::cerr << "Slice number " << i << " received!\n";
+        int receivedImageData = recv(serverSocket, (char*)tempBuf.data(), size, 0);
+        if (receivedImageData != size) {
+            std::cerr << "Error: Incomplete image data received\n";
+            // Xử lý lỗi khi không nhận được đủ dữ liệu ảnh mong đợi
+            return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
+        }
+
         buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
+        std::cerr << "Slice number " << i << " received!\n";
     }
 
-    cv::Mat ans = cv::imdecode(buf, cv::IMREAD_COLOR);
-    return ans;
+    std::cerr << "All slices received!\n";
+
+    cv::Mat image = cv::imdecode(buf, cv::IMREAD_COLOR);
+    if (image.empty()) {
+        std::cerr << "Error: Failed to create Mat from received data\n";
+        // Xử lý lỗi khi không thể tạo Mat từ dữ liệu nhận được
+    }
+
+    return image;
 }
 
 sf::Image matToImage(const cv::Mat& mat) {
