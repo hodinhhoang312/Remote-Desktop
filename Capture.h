@@ -4,7 +4,7 @@
 #include "Header.h"
 
 const int fps = 60;
-const int reso = 10000;
+const int reso = 10;
 int slices = reso;
 
 std::vector<uchar> buf;
@@ -57,6 +57,7 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
     send(clientSocket, (char*)&slices, sizeof(slices), 0);
 
     for (int i = 0; i < slices; ++i) {
+        cv::waitKey(1000 / 100); 
         int size = partSize + (i == slices - 1 ? remainder : 0); // Phần cuối cùng có thể cần cộng thêm phần dư
 
         int offset = i * partSize;
@@ -200,7 +201,7 @@ int Recv_Screen(SOCKET serverSocket)
         receivedImage = receiveMatFromSocket(serverSocket);
 
         std::cerr << "Image Received!\n";
-        cv::waitKey(1000 / fps); // Đợi 1/24 giây (của 24 fps)
+        cv::waitKey(1000 / fps); 
 
         sf::Image image = matToImage(receivedImage);        std::cerr << 2 << '\n';
         sf::Texture texture = imageToTexture(image);        std::cerr << 3 << '\n';
