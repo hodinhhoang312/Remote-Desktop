@@ -43,22 +43,23 @@ cv::Mat Capture_Screen() {
 }
 
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
-    buf.clear();
-    params = { cv::IMWRITE_JPEG_QUALITY, reso };
+    std::vector<uchar> buf;
+    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, reso };
     cv::imencode("screen.jpg", image, buf, params);
 
     int totalSize = buf.size();
-    int partSize = totalSize / slices; // Kích thước mỗi phần
+    int partSize = totalSize / slices;
+    int remainder = totalSize % slices; // Phần dư khi chia
 
     int bytesSent = 0;
 
     // Gửi số lần gửi dữ liệu
     send(clientSocket, (char*)&slices, sizeof(slices), 0);
 
-    // Gửi dữ liệu ảnh theo từng phần
     for (int i = 0; i < slices; ++i) {
+        int size = partSize + (i == slices - 1 ? remainder : 0); // Phần cuối cùng có thể cần cộng thêm phần dư
+
         int offset = i * partSize;
-        int size = (i == slices - 1) ? (totalSize - offset) : partSize;
 
         std::cerr << "Sending slice " << i + 1 << " of size " << size << " bytes\n";
 
@@ -66,8 +67,7 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
         send(clientSocket, (char*)&size, sizeof(size), 0);
 
         // Gửi dữ liệu ảnh
-        char* temp = (char*)(buf.data() + offset);
-        int bytes = send(clientSocket, temp, size, 0);
+        int bytes = send(clientSocket, reinterpret_cast<char*>(buf.data()) + offset, size, 0);
         if (bytes == -1) {
             // Xử lý lỗi khi gửi không thành công
             return -1;
@@ -77,6 +77,7 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
 
     return bytesSent;
 }
+
 
 std::string matToString(const cv::Mat& image) {
     std::stringstream ss;
@@ -141,7 +142,7 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
 
         if (receivedImageData != size) {
-            std::cerr << "Error: Incomplete image data received! Received size = "<<receivedImageData<<" ; Size = " << size <<"\n";
+            std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
             // Xử lý lỗi khi không nhận được đủ dữ liệu ảnh mong đợi
             return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
         }
