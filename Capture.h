@@ -5,7 +5,7 @@
 
 const int fps = 30;
 const int reso = 30;
-int slices = reso;
+int slices = 500;
 
 std::vector<uchar> buf;
 std::vector<int> params;
@@ -63,16 +63,26 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
 
         std::cerr << "Sending slice " << i + 1 << " of size " << size << " bytes\n";
 
-        // Gửi kích thước dữ liệu trước
-        send(clientSocket, (char*)&size, sizeof(size), 0);
+        int oke = 0;
+        while (!oke)
+        {
+            std::cerr << "Cant!\n";
+            // Gửi kích thước dữ liệu
+            send(clientSocket, (char*)&size, sizeof(size), 0);
 
-        // Gửi dữ liệu ảnh
-        int bytes = send(clientSocket, reinterpret_cast<char*>(buf.data()) + offset, size, 0);
-        if (bytes == -1) {
-            // Xử lý lỗi khi gửi không thành công
-            return -1;
+            // Gửi dữ liệu ảnh
+            int bytes = send(clientSocket, reinterpret_cast<char*>(buf.data()) + offset, size, 0);
+            bytesSent += bytes;
+
+            //Phan hoi viec thieu du lieu
+            int check_enough_data = 0;
+            check_enough_data = recv(clientSocket, (char*)&check_enough_data, sizeof(check_enough_data), 0);
+            std::cerr << check_enough_data << '\n';
+            if (check_enough_data == 0)
+                oke = 0;
+            else
+                oke = 1;
         }
-        bytesSent += bytes;
     }
 
     return bytesSent;
@@ -128,35 +138,42 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
     for (int i = 0; i < slices; ++i) {
         int size = 0;
         int receivedSize = 0;
+        int check_enough_data = 0;
+        while (!check_enough_data)
+        {
+            check_enough_data = 1;
+            receivedSize = recv(serverSocket, (char*)&size, sizeof(size), 0);
+            if (receivedSize != sizeof(size)) {
+                std::cerr << "Error: Incomplete data received for the image size\n";
+                // Xử lý lỗi khi không nhận được đúng kích thước dữ liệu mong đợi
+                bool notOKE = 1;
+            }
 
-        receivedSize = recv(serverSocket, (char*)&size, sizeof(size), 0);
-        if (receivedSize != sizeof(size)) {
-            std::cerr << "Error: Incomplete data received for the image size\n";
-            // Xử lý lỗi khi không nhận được đúng kích thước dữ liệu mong đợi
-            bool notOKE = 1;
-        }
+            std::vector<uchar> tempBuf(size);
 
-        std::vector<uchar> tempBuf(size);
+            int receivedImageData = recv(serverSocket, (char*)tempBuf.data(), size, 0);
 
-        int receivedImageData = recv(serverSocket, (char*)tempBuf.data(), size, 0);
-
-        std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
-
-        if (receivedImageData != size) {
             std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
-            // Xử lý lỗi khi không nhận được đủ dữ liệu ảnh mong đợi
-            return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
-        }
 
-        buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
-        std::cerr << "Slice number " << i << " received!\n";
+            if (receivedImageData != size) {
+                std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
+                // Xử lý lỗi khi không nhận được đủ dữ liệu ảnh mong đợi
+                notOKE = 1;
+                check_enough_data = 0;
+            }
+            send(serverSocket, (char*)&check_enough_data, sizeof(check_enough_data), 0);
+            if (!check_enough_data)
+                continue;
+            buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
+            std::cerr << "Slice number " << i << " received!\n";
+        }
     }
 
-    if (notOKE)
+    /*if (notOKE)
     {
         cv::Mat image = cv::imread("Image/Image1.jpg");
         return image;
-    }
+    }*/
 
     std::cerr << "All slices received!\n";
 
