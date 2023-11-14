@@ -100,7 +100,7 @@ bool RequestForIpAddress(char* ip_addr)
 {
     printf("Nhap ip vao: ");
     std::cin.getline(ip_addr, 16);
-
+    std::cin.getline(ip_addr, 16);
     return true;
 }
 
