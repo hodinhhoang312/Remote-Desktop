@@ -3,9 +3,9 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-const int fps = 30;
-const int reso = 30;
-int slices = 10;
+const int fps = 12;
+const int reso = 2;
+int slices = 5;
 
 std::vector<uchar> buf;
 std::vector<int> params;
@@ -43,51 +43,26 @@ cv::Mat Capture_Screen() {
 }
 
 int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
-    std::vector<uchar> buf;
-    std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, reso };
-    cv::imencode("screen.jpg", image, buf, params);
+    // Chuyển đổi ma trận hình ảnh thành mảng byte để gửi đi
+    std::vector<uchar> buffer;
+    cv::imencode(".jpg", image, buffer);
 
-    int totalSize = buf.size();
-    int partSize = totalSize / slices;
-    int remainder = totalSize % slices; // Phần dư khi chia
-
-    int bytesSent = 0;
-
-    // Gửi số lần gửi dữ liệu
-    send(clientSocket, (char*)&slices, sizeof(slices), 0);
-
-    for (int i = 0; i < slices; ++i) {
-        int size = partSize + (i == slices - 1 ? remainder : 0); // Phần cuối cùng có thể cần cộng thêm phần dư
-
-        int offset = i * partSize;
-
-        std::cerr << "Sending slice " << i + 1 << " of size " << size << " bytes\n";
-
-        // Gửi kích thước dữ liệu
-        send(clientSocket, (char*)&size, sizeof(size), 0);
-
-        int oke = 0;
-        while (!oke)
-        {
-            std::cerr << "Cant!\n";
-
-            // Gửi dữ liệu ảnh
-            int bytes = send(clientSocket, reinterpret_cast<char*>(buf.data()) + offset, size, 0);
-
-            //Phan hoi viec thieu du lieu
-            int check_enough_data = 0;
-            check_enough_data = recv(clientSocket, (char*)&check_enough_data, sizeof(check_enough_data), 0);
-            std::cerr << check_enough_data << '\n';
-            if (check_enough_data == 0)
-                oke = 0;
-            else
-                oke = 1, bytesSent += bytes;
-        }
+    // Gửi kích thước của dữ liệu hình ảnh
+    int imgSize = buffer.size();
+    if (send(clientSocket, reinterpret_cast<char*>(&imgSize), sizeof(imgSize), 0) == SOCKET_ERROR) {
+        // Xử lý lỗi khi gửi kích thước dữ liệu
+        return -1;
     }
 
-    return bytesSent;
-}
+    // Gửi dữ liệu hình ảnh qua socket
+    int bytesSent = send(clientSocket, reinterpret_cast<char*>(buffer.data()), imgSize, 0);
+    if (bytesSent == SOCKET_ERROR || bytesSent != imgSize) {
+        // Xử lý lỗi khi gửi dữ liệu hình ảnh
+        return -1;
+    }
 
+    return 0; // Gửi thành công
+}
 
 std::string matToString(const cv::Mat& image) {
     std::stringstream ss;
@@ -122,72 +97,22 @@ int Send_Screen(SOCKET clientSocket)
 }
 
 cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
-    bool notOKE = 0;
-    int receivedSlices = 0;
-    int slices = 0;
-
-    receivedSlices = recv(serverSocket, (char*)&slices, sizeof(slices), 0);
-    if (receivedSlices != sizeof(slices)) {
-        std::cerr << "Error: Incomplete data received for the number of slices\n";
-        // Xử lý lỗi khi không nhận được đúng số lượng byte mong đợi
-        return cv::Mat(); // Trả về một Mat rỗng để biểu thị lỗi
+    int imgSize = 0;
+    if (recv(serverSocket, reinterpret_cast<char*>(&imgSize), sizeof(imgSize), 0) == SOCKET_ERROR) {
+        // Xử lý lỗi khi nhận kích thước dữ liệu hình ảnh
+        return cv::Mat(); // Trả về một ma trận rỗng
     }
 
-    buf.clear();
-
-    for (int i = 0; i < slices; ++i) {
-        int size = 0;
-        int receivedSize = 0;
-        int check_enough_data = 0;
-
-        receivedSize = recv(serverSocket, (char*)&size, sizeof(size), 0);
-        if (receivedSize != sizeof(size)) {
-            std::cerr << "Error: Incomplete data received for the image size\n";
-            // Xử lý lỗi khi không nhận được đúng kích thước dữ liệu mong đợi
-            bool notOKE = 1;
-        }
-
-        while (!check_enough_data)
-        {
-            check_enough_data = 1;
-
-            std::vector<uchar> tempBuf(size);
-
-            int receivedImageData = recv(serverSocket, (char*)tempBuf.data(), size, 0);
-
-            std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
-
-            if (receivedImageData != size) {
-                std::cerr << "Error: Incomplete image data received! Received size = " << receivedImageData << " ; Size = " << size << "\n";
-                // Xử lý lỗi khi không nhận được đủ dữ liệu ảnh mong đợi
-                notOKE = 1;
-                check_enough_data = 0;
-            }
-            send(serverSocket, (char*)&check_enough_data, sizeof(check_enough_data), 0);
-            if (!check_enough_data)
-                continue;
-            buf.insert(buf.end(), tempBuf.begin(), tempBuf.end()); // Nối dữ liệu từ từng phần vào vector buf
-            std::cerr << "Slice number " << i << " received!\n";
-        }
+    std::vector<uchar> buffer(imgSize);
+    int bytesReceived = recv(serverSocket, reinterpret_cast<char*>(buffer.data()), imgSize, 0);
+    if (bytesReceived == SOCKET_ERROR || bytesReceived != imgSize) {
+        // Xử lý lỗi khi nhận dữ liệu hình ảnh
+        return cv::Mat(); // Trả về một ma trận rỗng
     }
 
-    /*if (notOKE)
-    {
-        cv::Mat image = cv::imread("Image/Image1.jpg");
-        return image;
-    }*/
+    cv::Mat image = cv::imdecode(buffer, cv::IMREAD_COLOR); // Tạo ma trận hình ảnh từ dữ liệu nhận được
 
-    std::cerr << "All slices received!\n";
-
-    cv::Mat image = cv::imdecode(buf, cv::IMREAD_COLOR);
-    if (image.empty()) {
-        std::cerr << "Error: Failed to create Mat from received data\n";
-        // Xử lý lỗi khi không thể tạo Mat từ dữ liệu nhận được
-    }
-
-
-
-    return image;
+    return image; // Trả về ma trận hình ảnh đã nhận
 }
 
 sf::Image matToImage(const cv::Mat& mat) {
