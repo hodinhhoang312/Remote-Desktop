@@ -33,7 +33,6 @@ int Client()
     // Connect to the server
     while (1)
     {
-
         if (RequestForIpAddress(SERVER_IP_ADDRESS))
         {
             serverAddr.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS);
@@ -90,8 +89,6 @@ int Server()
         WSACleanup();
         return 1;
     }
-
-    PrintIPAddress();
 
     // Listen for incoming connections
     if (listen(serverSocket, 5) == SOCKET_ERROR) {
