@@ -4,7 +4,7 @@
 #include "Header.h"
 
 const int fps = 30;
-const int reso = 10;
+const int reso = 30;
 int slices = 10;
 
 std::vector<uchar> buf;
@@ -70,7 +70,7 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
         while (!oke)
         {
             std::cerr << "Cant!\n";
-            
+
             // Gửi dữ liệu ảnh
             int bytes = send(clientSocket, reinterpret_cast<char*>(buf.data()) + offset, size, 0);
 
