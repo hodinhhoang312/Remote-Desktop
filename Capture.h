@@ -3,8 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-const int reso = 50;
-int resize = 50;
+const int reso = 80;
+int resize = 80;
 
 std::vector<uchar> buf;
 std::vector<int> params;
@@ -120,7 +120,6 @@ int Send_Screen(SOCKET clientSocket)
         else {
             std::cerr << "Error: Could not read the image." << std::endl;
         }
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1000 / fps));
     }
     return 0;
 }
@@ -198,7 +197,6 @@ int Recv_Screen(SOCKET serverSocket)
         receivedImage = receiveMatFromSocket(serverSocket);
 
         std::cerr << "Image Received!\n";
-        //cv::waitKey(1000 / fps); // Đợi 1/24 giây (của 24 fps)
 
         sf::Image image = matToImage(receivedImage);
         sf::Texture texture = imageToTexture(image);
