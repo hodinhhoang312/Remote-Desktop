@@ -3,8 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include "Header.h"
 
-const int reso = 5;
-int resize = 80;
+const int reso = 50;
+int resize = 50;
 
 std::vector<uchar> buf;
 std::vector<int> params;
@@ -184,7 +184,7 @@ cv::Mat receivedImage;
 
 int Recv_Screen(SOCKET serverSocket)
 {
-    sf::RenderWindow window(sf::VideoMode(1920*resize/100, 1080*resize/100), "Remote Desktop Client"); // Resolution 1920x1080
+    sf::RenderWindow window(sf::VideoMode(1920 * resize / 100, 1080 * resize / 100), "Remote Desktop Client"); // Resolution 1920x1080
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -200,11 +200,11 @@ int Recv_Screen(SOCKET serverSocket)
         std::cerr << "Image Received!\n";
         //cv::waitKey(1000 / fps); // Đợi 1/24 giây (của 24 fps)
 
-        sf::Image image = matToImage(receivedImage);        
-        sf::Texture texture = imageToTexture(image);        
-        sf::Sprite sprite(texture);                        
+        sf::Image image = matToImage(receivedImage);
+        sf::Texture texture = imageToTexture(image);
+        sf::Sprite sprite(texture);
 
-        window.draw(sprite);                                
+        window.draw(sprite);
         window.display();
     }
 
