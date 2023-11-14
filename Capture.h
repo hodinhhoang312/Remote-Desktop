@@ -4,8 +4,8 @@
 #include "Header.h"
 
 const int fps = 30;
-const int reso = 30;
-int slices = 500;
+const int reso = 10;
+int slices = 10;
 
 std::vector<uchar> buf;
 std::vector<int> params;
@@ -71,10 +71,8 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
         {
             std::cerr << "Cant!\n";
             
-
             // Gửi dữ liệu ảnh
             int bytes = send(clientSocket, reinterpret_cast<char*>(buf.data()) + offset, size, 0);
-            bytesSent += bytes;
 
             //Phan hoi viec thieu du lieu
             int check_enough_data = 0;
@@ -83,7 +81,7 @@ int sendMatOverSocket(const cv::Mat& image, SOCKET clientSocket) {
             if (check_enough_data == 0)
                 oke = 0;
             else
-                oke = 1;
+                oke = 1, bytesSent += bytes;
         }
     }
 
@@ -152,7 +150,6 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
         while (!check_enough_data)
         {
             check_enough_data = 1;
-
 
             std::vector<uchar> tempBuf(size);
 
