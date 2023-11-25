@@ -1,10 +1,13 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 #include <SFML/Graphics.hpp>
+#include <SFML/Network.hpp>
+#include <SFML/System.hpp>
+#include <SFML/Window.hpp>
 #include "Header.h"
 
-const int reso = 80;
-int resize = 80;
+const int reso = 30;
+float resize = 80;
 
 std::vector<uchar> buf;
 std::vector<int> params;
@@ -100,8 +103,41 @@ std::string matToString(const cv::Mat& image) {
 
 int Send_Screen(SOCKET clientSocket)
 {
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "Failed to initialize Winsock.\n";
+        return 1;
+    }
+
+    sf::TcpListener listener;
+    if (listener.listen(312) != sf::Socket::Done) {
+        std::cerr << "Failed to listen on port 312.\n";
+        WSACleanup();
+        return 1;
+    }
+
+    std::cout << "Server is listening on port 312...\n";
+
+    sf::TcpSocket socket;
+    if (listener.accept(socket) != sf::Socket::Done) {
+        std::cerr << "Failed to accept client connection.\n";
+        WSACleanup();
+        return 1;
+    }
     while (1)
-    {
+    {    
+        sf::Event event;
+        std::size_t receivedSize;
+        if (socket.receive(&event, sizeof(event), receivedSize) != sf::Socket::Done) {
+            std::cerr << "Error receiving event from client\n";
+        }
+
+        if (event.type == sf::Event::TextEntered && event.text.unicode < 128) {
+            char typedChar = static_cast<char>(event.text.unicode);
+            std::cout << "Typed character: " << typedChar << std::endl;
+        }
+
+
         cv::Mat screenshot = Capture_Screen(); // Chup man hinh
 
         reduceSize(screenshot, resize);
@@ -110,17 +146,23 @@ int Send_Screen(SOCKET clientSocket)
 
             int bytesSend = sendMatOverSocket(screenshot, clientSocket);
 
-            if (bytesSend > 0)
-                std::cerr << "Send Successful! BytesSend : " << bytesSend << ".\n";
+            if (bytesSend > 0);
+               // std::cerr << "Send Successful! BytesSend : " << bytesSend << ".\n";
             else
             {
                 std::cerr << "Cannot Send Image!\n";
+                return 2;
             }
         }
         else {
             std::cerr << "Error: Could not read the image." << std::endl;
         }
     }
+
+    socket.disconnect();
+    listener.close();
+    WSACleanup();
+
     return 0;
 }
 
@@ -181,22 +223,42 @@ sf::Texture imageToTexture(const sf::Image& image) {
 
 cv::Mat receivedImage;
 
-int Recv_Screen(SOCKET serverSocket)
+int Recv_Screen(SOCKET serverSocket, sf::RenderWindow &window, char* addr)
 {
-    sf::RenderWindow window(sf::VideoMode(1920 * resize / 100, 1080 * resize / 100), "Remote Desktop Client"); // Resolution 1920x1080
+
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "Failed to initialize Winsock.\n";
+        return 1;
+    }
+
+    std::cerr << "Try to connect to port 312!\n";
+    sf::TcpSocket socket;
+    if (socket.connect(addr, 312) != sf::Socket::Done) {
+        std::cerr << "Failed to connect to server.\n";
+        WSACleanup();
+        return 1;
+    }
+
+    std::cerr << "Connected!\n";
+
     while (window.isOpen()) {
+
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
+            if (event.type == sf::Event::Closed)
                 window.close();
-            }
+        }
+
+        if (socket.send(&event, sizeof(event)) != sf::Socket::Done) {
+            std::cerr << "Error sending event to server\n";
         }
 
         window.clear();
 
         receivedImage = receiveMatFromSocket(serverSocket);
 
-        std::cerr << "Image Received!\n";
+      //  std::cerr << "Image Received!\n";
 
         sf::Image image = matToImage(receivedImage);
         sf::Texture texture = imageToTexture(image);
@@ -205,6 +267,9 @@ int Recv_Screen(SOCKET serverSocket)
         window.draw(sprite);
         window.display();
     }
+
+    socket.disconnect();
+    WSACleanup();
 
     return 1;
 }
