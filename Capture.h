@@ -135,6 +135,19 @@ int Send_Screen(SOCKET clientSocket)
         if (event.type == sf::Event::TextEntered && event.text.unicode < 128) {
             char typedChar = static_cast<char>(event.text.unicode);
             std::cout << "Typed character: " << typedChar << std::endl;
+
+            // Simulate pressing the 'A' key
+            INPUT input;
+            input.type = INPUT_KEYBOARD;
+            input.ki.wVk = typedChar;  // Virtual key code for 'A'
+            input.ki.dwFlags = 0;  // 0 for key press
+
+            SendInput(1, &input, sizeof(INPUT));
+
+            // Simulate releasing the 'A' key
+            input.ki.dwFlags = KEYEVENTF_KEYUP;
+            SendInput(1, &input, sizeof(INPUT));
+
         }
 
 
