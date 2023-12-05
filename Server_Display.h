@@ -2,12 +2,41 @@
 #include "Tools.h"
 #include "Capture.h"
 
+void simulateKeyPress(sf::Keyboard::Key key) {
+
+    INPUT input;
+    input.type = INPUT_KEYBOARD;
+    input.ki.wScan = 0;
+    input.ki.time = 0;
+    input.ki.dwExtraInfo = 0;
+
+    // Chuyển đổi SFML KeyCode thành mã phím
+    int vkCode = static_cast<int>(key);
+    if (vkCode != -1) {
+        input.ki.wVk = vkCode;
+
+        // Gửi sự kiện bấm phím xuống
+        input.ki.dwFlags = 0;
+        SendInput(1, &input, sizeof(INPUT));
+
+        // Chờ một chút (đảm bảo bấm phím được xử lý)
+        Sleep(100);
+
+        // Gửi sự kiện nâng phím lên
+        input.ki.dwFlags = KEYEVENTF_KEYUP;
+        SendInput(1, &input, sizeof(INPUT));
+    }
+    else {
+        std::cout << "Không thể chuyển đổi SFML KeyCode thành mã phím." << std::endl;
+    }
+}
+
 WORD UnicodeToVK(wchar_t unicodeChar) {
     // Chuyển đổi Unicode thành mã Virtual-Key
     return VkKeyScanW(unicodeChar);
 }
 
-void simulateKeyPress(sf::Uint32 key) {
+void simulateTextEntered(sf::Uint32 key) {
 
     INPUT input;
     input.type = INPUT_KEYBOARD;
@@ -36,6 +65,7 @@ void simulateKeyPress(sf::Uint32 key) {
     }
 
 }
+
 
 
 int Send_Screen(SOCKET clientSocket)
@@ -69,12 +99,21 @@ int Send_Screen(SOCKET clientSocket)
             std::cerr << "Error receiving event from client\n";
         }
 
-        if (event.type == sf::Event::TextEntered && event.text.unicode < 128) {
-            char typedChar = static_cast<char>(event.text.unicode);
-            std::cout << "Typed character: " << typedChar << ' ' << int(typedChar) << std::endl;
+        if (event.type == sf::Event::KeyPressed ) {
+            simulateKeyPress(event.key.code);
+        }
+        if (event.type == sf::Event::TextEntered) {
 
-            simulateKeyPress(event.text.unicode);
+        }
 
+        switch (event.type)
+        {
+        case sf::Event::TextEntered:
+            simulateTextEntered(event.text.unicode);
+            break;
+        case sf::Event::KeyPressed:
+            simulateKeyPress(event.key.code);
+            break;
         }
 
 
