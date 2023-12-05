@@ -5,6 +5,7 @@
 #include <SFML/System.hpp>
 #include <SFML/Window.hpp>
 #include "Header.h"
+#include <cwchar>
 
 const int reso = 30;
 float resize = 80;
@@ -101,118 +102,6 @@ std::string matToString(const cv::Mat& image) {
     return ss.str();
 }
 
-int Send_Screen(SOCKET clientSocket)
-{
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "Failed to initialize Winsock.\n";
-        return 1;
-    }
-
-    sf::TcpListener listener;
-    if (listener.listen(312) != sf::Socket::Done) {
-        std::cerr << "Failed to listen on port 312.\n";
-        WSACleanup();
-        return 1;
-    }
-
-    std::cout << "Server is listening on port 312...\n";
-
-    sf::TcpSocket socket;
-    if (listener.accept(socket) != sf::Socket::Done) {
-        std::cerr << "Failed to accept client connection.\n";
-        WSACleanup();
-        return 1;
-    }
-    while (1)
-    {    
-        sf::Event event;
-        std::size_t receivedSize;
-        if (socket.receive(&event, sizeof(event), receivedSize) != sf::Socket::Done) {
-            std::cerr << "Error receiving event from client\n";
-        }
-
-        if (event.type == sf::Event::TextEntered && event.text.unicode < 128) {
-            char typedChar = static_cast<char>(event.text.unicode);
-            std::cout << "Typed character: " << typedChar << std::endl;
-
-            // Simulate pressing the 'A' key
-            INPUT input;
-            input.type = INPUT_KEYBOARD;
-            input.ki.wVk = typedChar;  // Virtual key code for 'A'
-            input.ki.dwFlags = 0;  // 0 for key press
-
-            SendInput(1, &input, sizeof(INPUT));
-
-            // Simulate releasing the 'A' key
-            input.ki.dwFlags = KEYEVENTF_KEYUP;
-            SendInput(1, &input, sizeof(INPUT));
-
-        }
-
-
-        cv::Mat screenshot = Capture_Screen(); // Chup man hinh
-
-        reduceSize(screenshot, resize);
-
-        if (!screenshot.empty()) {
-
-            int bytesSend = sendMatOverSocket(screenshot, clientSocket);
-
-            if (bytesSend > 0);
-               // std::cerr << "Send Successful! BytesSend : " << bytesSend << ".\n";
-            else
-            {
-                std::cerr << "Cannot Send Image!\n";
-                return 2;
-            }
-        }
-        else {
-            std::cerr << "Error: Could not read the image." << std::endl;
-        }
-    }
-
-    socket.disconnect();
-    listener.close();
-    WSACleanup();
-
-    return 0;
-}
-
-cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
-    int totalSize = 0;
-
-    // Nhận kích thước dữ liệu
-    if (recv(serverSocket, (char*)&totalSize, sizeof(totalSize), 0) == SOCKET_ERROR) {
-        // Xử lý lỗi khi nhận kích thước dữ liệu
-        return cv::Mat(); // Trả về một ma trận rỗng
-    }
-
-    std::vector<uchar> buffer;
-    buffer.reserve(totalSize);
-
-    int bytesReceived = 0;
-    while (bytesReceived < totalSize) {
-        int remaining = totalSize - bytesReceived;
-        int chunkSize = remaining > 4096 ? 4096 : remaining; // Kích thước chunk mỗi lần nhận
-
-        std::vector<uchar> tempBuffer(chunkSize);
-        int received = recv(serverSocket, reinterpret_cast<char*>(tempBuffer.data()), chunkSize, 0);
-
-        if (received <= 0) {
-            // Xử lý lỗi hoặc kết thúc kết nối
-            return cv::Mat(); // Trả về một ma trận rỗng
-        }
-
-        bytesReceived += received;
-        buffer.insert(buffer.end(), tempBuffer.begin(), tempBuffer.begin() + received);
-    }
-
-    cv::Mat image = cv::imdecode(buffer, cv::IMREAD_COLOR); // Tạo ma trận hình ảnh từ dữ liệu nhận được
-
-    return image; // Trả về ma trận hình ảnh đã nhận
-}
-
 
 sf::Image matToImage(const cv::Mat& mat) {
     sf::Image image;
@@ -232,57 +121,4 @@ sf::Texture imageToTexture(const sf::Image& image) {
     sf::Texture texture;
     texture.loadFromImage(image);
     return texture;
-}
-
-cv::Mat receivedImage;
-
-int Recv_Screen(SOCKET serverSocket, sf::RenderWindow &window, char* addr)
-{
-
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "Failed to initialize Winsock.\n";
-        return 1;
-    }
-
-    std::cerr << "Try to connect to port 312!\n";
-    sf::TcpSocket socket;
-    if (socket.connect(addr, 312) != sf::Socket::Done) {
-        std::cerr << "Failed to connect to server.\n";
-        WSACleanup();
-        return 1;
-    }
-
-    std::cerr << "Connected!\n";
-
-    while (window.isOpen()) {
-
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
-                window.close();
-        }
-
-        if (socket.send(&event, sizeof(event)) != sf::Socket::Done) {
-            std::cerr << "Error sending event to server\n";
-        }
-
-        window.clear();
-
-        receivedImage = receiveMatFromSocket(serverSocket);
-
-      //  std::cerr << "Image Received!\n";
-
-        sf::Image image = matToImage(receivedImage);
-        sf::Texture texture = imageToTexture(image);
-        sf::Sprite sprite(texture);
-
-        window.draw(sprite);
-        window.display();
-    }
-
-    socket.disconnect();
-    WSACleanup();
-
-    return 1;
 }
