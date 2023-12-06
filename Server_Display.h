@@ -2,23 +2,42 @@
 #include "Tools.h"
 #include "Capture.h"
 
-void simulateKeyPressed(sf::Keyboard::Key key) {
+void processEvent(const sf::Event& event) {
     INPUT input;
     input.type = INPUT_KEYBOARD;
-    input.ki.wVk = static_cast<WORD>(key);
-    input.ki.dwFlags = 0; // 0 for key press
 
-    SendInput(1, &input, sizeof(INPUT));
-    Sleep(100);
-}
+    // Kiểm tra sự kiện từ sf::Event
+    switch (event.type) {
+    case sf::Event::KeyPressed:
+        // Bấm phím
+        input.ki.wVk = static_cast<WORD>(event.key.code);
+        input.ki.dwFlags = 0; // Keydown
+        SendInput(1, &input, sizeof(INPUT));
+        break;
 
-void simulateKeyReleased(sf::Keyboard::Key key) {
-    INPUT input;
-    input.type = INPUT_KEYBOARD;
-    input.ki.wVk = static_cast<WORD>(key);
-    input.ki.dwFlags = KEYEVENTF_KEYUP;
+    case sf::Event::KeyReleased:
+        // Nhả phím
+        input.ki.wVk = static_cast<WORD>(event.key.code);
+        input.ki.dwFlags = KEYEVENTF_KEYUP;
+        SendInput(1, &input, sizeof(INPUT));
+        break;
 
-    SendInput(1, &input, sizeof(INPUT));
+    case sf::Event::MouseButtonPressed:
+        // Click chuột
+        input.type = INPUT_MOUSE;
+        input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        SendInput(1, &input, sizeof(INPUT));
+        break;
+
+    case sf::Event::MouseButtonReleased:
+        // Nhả chuột
+        input.type = INPUT_MOUSE;
+        input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+        SendInput(1, &input, sizeof(INPUT));
+        break;
+
+        // Thêm các trường hợp khác nếu cần thiết (ví dụ: di chuyển chuột, scroll chuột, v.v.)
+    }
 }
 
 int Send_Screen(SOCKET clientSocket)
@@ -52,17 +71,7 @@ int Send_Screen(SOCKET clientSocket)
             std::cerr << "Error receiving event from client\n";
         }
 
-        std::cout << event.type << '\n';
-
-        switch (event.type)
-        {
-        case sf::Event::KeyPressed:
-            simulateKeyPressed(event.key.code);
-            break;
-        case sf::Event::KeyReleased:
-            simulateKeyReleased(event.key.code);
-            break;
-        }
+        processEvent(event);
 
 
         cv::Mat screenshot = Capture_Screen(); // Chup man hinh
