@@ -5,78 +5,20 @@
 void simulateKeyPressed(sf::Keyboard::Key key) {
     INPUT input;
     input.type = INPUT_KEYBOARD;
-    input.ki.wScan = 0;
-    input.ki.time = 0;
-    input.ki.dwExtraInfo = 0;
+    input.ki.wVk = static_cast<WORD>(key);
+    input.ki.dwFlags = 0; // 0 for key press
 
-    // Chuyển đổi SFML KeyCode thành mã phím
-    int vkCode = 0;
-
-    // Xác định mã phím tương ứng với các phím điều khiển
-    switch (key) {
-    case sf::Keyboard::LControl:
-        vkCode = VK_LCONTROL;
-        break;
-    case sf::Keyboard::RControl:
-        vkCode = VK_RCONTROL;
-        break;
-    case sf::Keyboard::LShift:
-        vkCode = VK_LSHIFT;
-        break;
-    case sf::Keyboard::RShift:
-        vkCode = VK_RSHIFT;
-        break;
-    case sf::Keyboard::LAlt:
-        vkCode = VK_LMENU; // VK_MENU là mã phím tương ứng với Alt
-        break;
-    case sf::Keyboard::RAlt:
-        vkCode = VK_RMENU; // VK_MENU là mã phím tương ứng với Alt
-        break;
-    default:
-        vkCode = static_cast<int>(key);
-        break;
-    }
-
-    if (vkCode != -1) {
-        input.ki.wVk = static_cast<WORD>(vkCode);
-
-        // Gửi sự kiện bấm phím xuống
-        input.ki.dwFlags = 0;
-        SendInput(1, &input, sizeof(INPUT));
-
-        // Chờ một chút (đảm bảo bấm phím được xử lý)
-    }
-    else {
-        std::cout << "Không thể chuyển đổi SFML KeyCode thành mã phím." << std::endl;
-    }
+    SendInput(1, &input, sizeof(INPUT));
+    Sleep(100);
 }
 
 void simulateKeyReleased(sf::Keyboard::Key key) {
     INPUT input;
     input.type = INPUT_KEYBOARD;
-    input.ki.wScan = 0;
-    input.ki.time = 0;
-    input.ki.dwExtraInfo = 0;
+    input.ki.wVk = static_cast<WORD>(key);
+    input.ki.dwFlags = KEYEVENTF_KEYUP;
 
-    // Chuyển đổi SFML KeyCode thành mã phím
-    int vkCode = static_cast<int>(key);
-    if (vkCode != -1) {
-        input.ki.wVk = vkCode;
-
-        // Gửi sự kiện bấm phím xuống
-        input.ki.dwFlags = 0;
-        SendInput(1, &input, sizeof(INPUT));
-
-        // Chờ một chút (đảm bảo bấm phím được xử lý)
-        Sleep(100);
-
-        // Gửi sự kiện nâng phím lên
-        input.ki.dwFlags = KEYEVENTF_KEYUP;
-        SendInput(1, &input, sizeof(INPUT));
-    }
-    else {
-        std::cout << "Không thể chuyển đổi SFML KeyCode thành mã phím." << std::endl;
-    }
+    SendInput(1, &input, sizeof(INPUT));
 }
 
 int Send_Screen(SOCKET clientSocket)
