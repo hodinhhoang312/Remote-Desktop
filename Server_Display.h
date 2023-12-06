@@ -2,8 +2,56 @@
 #include "Tools.h"
 #include "Capture.h"
 
-void simulateKeyPress(sf::Keyboard::Key key) {
+void simulateKeyPressed(sf::Keyboard::Key key) {
+    INPUT input;
+    input.type = INPUT_KEYBOARD;
+    input.ki.wScan = 0;
+    input.ki.time = 0;
+    input.ki.dwExtraInfo = 0;
 
+    // Chuyển đổi SFML KeyCode thành mã phím
+    int vkCode = 0;
+
+    // Xác định mã phím tương ứng với các phím điều khiển
+    switch (key) {
+    case sf::Keyboard::LControl:
+        vkCode = VK_LCONTROL;
+        break;
+    case sf::Keyboard::RControl:
+        vkCode = VK_RCONTROL;
+        break;
+    case sf::Keyboard::LShift:
+        vkCode = VK_LSHIFT;
+        break;
+    case sf::Keyboard::RShift:
+        vkCode = VK_RSHIFT;
+        break;
+    case sf::Keyboard::LAlt:
+        vkCode = VK_LMENU; // VK_MENU là mã phím tương ứng với Alt
+        break;
+    case sf::Keyboard::RAlt:
+        vkCode = VK_RMENU; // VK_MENU là mã phím tương ứng với Alt
+        break;
+    default:
+        vkCode = static_cast<int>(key);
+        break;
+    }
+
+    if (vkCode != -1) {
+        input.ki.wVk = static_cast<WORD>(vkCode);
+
+        // Gửi sự kiện bấm phím xuống
+        input.ki.dwFlags = 0;
+        SendInput(1, &input, sizeof(INPUT));
+
+        // Chờ một chút (đảm bảo bấm phím được xử lý)
+    }
+    else {
+        std::cout << "Không thể chuyển đổi SFML KeyCode thành mã phím." << std::endl;
+    }
+}
+
+void simulateKeyReleased(sf::Keyboard::Key key) {
     INPUT input;
     input.type = INPUT_KEYBOARD;
     input.ki.wScan = 0;
@@ -30,43 +78,6 @@ void simulateKeyPress(sf::Keyboard::Key key) {
         std::cout << "Không thể chuyển đổi SFML KeyCode thành mã phím." << std::endl;
     }
 }
-
-WORD UnicodeToVK(wchar_t unicodeChar) {
-    // Chuyển đổi Unicode thành mã Virtual-Key
-    return VkKeyScanW(unicodeChar);
-}
-
-void simulateTextEntered(sf::Uint32 key) {
-
-    INPUT input;
-    input.type = INPUT_KEYBOARD;
-    input.ki.wScan = 0;
-    input.ki.time = 0;
-    input.ki.dwExtraInfo = 0;
-
-    // Chuyển đổi Unicode thành mã phím
-    WORD vkCode = UnicodeToVK(key);
-    if (vkCode != 0xFFFF) {
-        input.ki.wVk = vkCode;
-
-        // Gửi sự kiện bấm phím xuống
-        input.ki.dwFlags = 0;
-        SendInput(1, &input, sizeof(INPUT));
-
-        // Chờ một chút (đảm bảo bấm phím được xử lý)
-        Sleep(100);
-
-        // Gửi sự kiện nâng phím lên
-        input.ki.dwFlags = KEYEVENTF_KEYUP;
-        SendInput(1, &input, sizeof(INPUT));
-    }
-    else {
-        std::cout << "Không thể chuyển đổi Unicode thành mã phím." << std::endl;
-    }
-
-}
-
-
 
 int Send_Screen(SOCKET clientSocket)
 {
@@ -99,20 +110,15 @@ int Send_Screen(SOCKET clientSocket)
             std::cerr << "Error receiving event from client\n";
         }
 
-        if (event.type == sf::Event::KeyPressed ) {
-            simulateKeyPress(event.key.code);
-        }
-        if (event.type == sf::Event::TextEntered) {
-
-        }
+        std::cout << event.type << '\n';
 
         switch (event.type)
         {
-        case sf::Event::TextEntered:
-            simulateTextEntered(event.text.unicode);
-            break;
         case sf::Event::KeyPressed:
-            simulateKeyPress(event.key.code);
+            simulateKeyPressed(event.key.code);
+            break;
+        case sf::Event::KeyReleased:
+            simulateKeyReleased(event.key.code);
             break;
         }
 
