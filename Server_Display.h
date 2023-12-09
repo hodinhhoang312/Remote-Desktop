@@ -10,14 +10,14 @@ void processEvent(const sf::Event& event) {
     switch (event.type) {
     case sf::Event::KeyPressed:
         // Bấm phím
-        input.ki.wVk = static_cast<WORD>(event.key.code);
+        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);
         input.ki.dwFlags = 0; // Keydown
         SendInput(1, &input, sizeof(INPUT));
         break;
 
     case sf::Event::KeyReleased:
         // Nhả phím
-        input.ki.wVk = static_cast<WORD>(event.key.code);
+        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);
         input.ki.dwFlags = KEYEVENTF_KEYUP;
         SendInput(1, &input, sizeof(INPUT));
         break;
@@ -26,6 +26,8 @@ void processEvent(const sf::Event& event) {
         // Click chuột
         input.type = INPUT_MOUSE;
         input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        input.mi.dx = event.mouseButton.x * 100 / resize;
+        input.mi.dy = event.mouseButton.y * 100 / resize;
         SendInput(1, &input, sizeof(INPUT));
         break;
 
@@ -33,6 +35,8 @@ void processEvent(const sf::Event& event) {
         // Nhả chuột
         input.type = INPUT_MOUSE;
         input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+        input.mi.dx = event.mouseButton.x * 100 / resize;
+        input.mi.dy = event.mouseButton.y * 100 / resize;
         SendInput(1, &input, sizeof(INPUT));
         break;
 
@@ -176,8 +180,6 @@ int Server(sf::RenderWindow& window, bool& ServerConnected)
 
     return 0;
 }
-
-
 
 void Server_Display_Screen(sf::RenderWindow& window, sf::Event event, std::string txt, bool& Server_On)
 {
