@@ -6,22 +6,24 @@ void processEvent(const sf::Event& event) {
     INPUT input;
     input.type = INPUT_KEYBOARD;
 
+    int virtualKeyCode = MapSFMLKeyToVirtualKey(event.key.code);
+
     // Kiểm tra sự kiện từ sf::Event
     switch (event.type) {
     case sf::Event::KeyPressed:
         // Bấm phím
-        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);
+        input.ki.wVk = static_cast<WORD>(virtualKeyCode);
         input.ki.dwFlags = 0; // Keydown
         SendInput(1, &input, sizeof(INPUT));
         break;
 
     case sf::Event::KeyReleased:
         // Nhả phím
-        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);
+        input.ki.wVk = static_cast<WORD>(virtualKeyCode);
         input.ki.dwFlags = KEYEVENTF_KEYUP;
         SendInput(1, &input, sizeof(INPUT));
         break;
-
+        /*
     case sf::Event::MouseButtonPressed:
         // Click chuột
         input.type = INPUT_MOUSE;
@@ -40,7 +42,7 @@ void processEvent(const sf::Event& event) {
         SendInput(1, &input, sizeof(INPUT));
         break;
 
-        // Thêm các trường hợp khác nếu cần thiết (ví dụ: di chuyển chuột, scroll chuột, v.v.)
+        // Thêm các trường hợp khác nếu cần thiết (ví dụ: di chuyển chuột, scroll chuột, v.v.)*/
     }
 }
 
@@ -185,7 +187,7 @@ void Server_Display_Screen(sf::RenderWindow& window, sf::Event event, std::strin
 {
     window.clear();
 
-    Draw_Background(window, "Resources/Image/background.png");
+    //Draw_Background(window, "Resources/Image/background.png");
 
     Draw_Text(window, txt, 30, sf::Color::Black, width / 2 - 100, height / 2 - 200);
 
