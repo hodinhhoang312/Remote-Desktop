@@ -5,6 +5,34 @@
 #include <Windows.h>
 
 void processEvent(const sf::Event& event) {
+
+    switch (event.type) {
+    case sf::Event::Closed:
+        window.close();
+        break;
+    case sf::Event::KeyPressed:
+        std::cout << "Key Pressed: " << event.key.code << std::endl;
+        break;
+    case sf::Event::KeyReleased:
+        std::cout << "Key Released: " << event.key.code << std::endl;
+        break;
+    case sf::Event::MouseButtonPressed:
+        std::cout << "Mouse Button Pressed: " << event.mouseButton.button << std::endl;
+        break;
+    case sf::Event::MouseButtonReleased:
+        std::cout << "Mouse Button Released: " << event.mouseButton.button << std::endl;
+        break;
+    case sf::Event::MouseMoved:
+        std::cout << "Mouse Moved: x=" << event.mouseMove.x << ", y=" << event.mouseMove.y << std::endl;
+        break;
+    case sf::Event::MouseWheelScrolled:
+        std::cout << "Mouse Wheel Scrolled: delta=" << event.mouseWheelScroll.delta << std::endl;
+        break;
+    default:
+        // Các sự kiện khác
+        break;
+    }
+
     INPUT input;
 
     input.type = INPUT_KEYBOARD;
