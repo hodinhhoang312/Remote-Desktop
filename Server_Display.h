@@ -1,17 +1,21 @@
 #pragma once
 #include "Tools.h"
 #include "Capture.h"
+#include <winuser.h>
 
 void processEvent(const sf::Event& event) {
     INPUT input;
+
     input.type = INPUT_KEYBOARD;
+    int x = event.mouseButton.x * 100 / resize;
+    int y = event.mouseButton.y * 100 / resize;
 
     // Kiểm tra sự kiện từ sf::Event
     switch (event.type) {
     case sf::Event::KeyPressed:
-        // Bấm phím
+      // Bấm phím
         input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);        
-        std::cerr << "Press: " << int(input.ki.wVk) << '\n';
+      //  std::cerr << "Press: " << int(input.ki.wVk) << '\n';
         input.ki.dwFlags = 0; // Keydown
         SendInput(1, &input, sizeof(INPUT));
         break;
@@ -19,27 +23,19 @@ void processEvent(const sf::Event& event) {
     case sf::Event::KeyReleased:
         // Nhả phím
         input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);        
-        std::cerr << "Release: " << int(input.ki.wVk) << '\n';
+       // std::cerr << "Release: " << int(input.ki.wVk) << '\n';
         input.ki.dwFlags = KEYEVENTF_KEYUP;
         SendInput(1, &input, sizeof(INPUT));
         break;
-        /*
+        
     case sf::Event::MouseButtonPressed:
-        // Click chuột
-        input.type = INPUT_MOUSE;
-        input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-        input.mi.dx = event.mouseButton.x * 100 / resize;
-        input.mi.dy = event.mouseButton.y * 100 / resize;
-        SendInput(1, &input, sizeof(INPUT));
+        // Nhấn chuột
+        mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
         break;
 
     case sf::Event::MouseButtonReleased:
         // Nhả chuột
-        input.type = INPUT_MOUSE;
-        input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-        input.mi.dx = event.mouseButton.x * 100 / resize;
-        input.mi.dy = event.mouseButton.y * 100 / resize;
-        SendInput(1, &input, sizeof(INPUT));
+        mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
         break;
 
         // Thêm các trường hợp khác nếu cần thiết (ví dụ: di chuyển chuột, scroll chuột, v.v.)*/
