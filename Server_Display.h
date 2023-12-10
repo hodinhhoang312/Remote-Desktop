@@ -7,9 +7,6 @@
 void processEvent(const sf::Event& event) {
 
     switch (event.type) {
-    case sf::Event::Closed:
-        window.close();
-        break;
     case sf::Event::KeyPressed:
         std::cout << "Key Pressed: " << event.key.code << std::endl;
         break;
