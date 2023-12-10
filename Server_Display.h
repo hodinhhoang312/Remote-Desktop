@@ -2,6 +2,7 @@
 #include "Tools.h"
 #include "Capture.h"
 #include <winuser.h>
+#include <Windows.h>
 
 void processEvent(const sf::Event& event) {
     INPUT input;
@@ -13,34 +14,56 @@ void processEvent(const sf::Event& event) {
     // Kiểm tra sự kiện từ sf::Event
     switch (event.type) {
     case sf::Event::KeyPressed:
-      // Bấm phím
-        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);        
-      //  std::cerr << "Press: " << int(input.ki.wVk) << '\n';
+        // Bấm phím
+        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);
         input.ki.dwFlags = 0; // Keydown
         SendInput(1, &input, sizeof(INPUT));
         break;
 
     case sf::Event::KeyReleased:
         // Nhả phím
-        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);        
-       // std::cerr << "Release: " << int(input.ki.wVk) << '\n';
+        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);
         input.ki.dwFlags = KEYEVENTF_KEYUP;
         SendInput(1, &input, sizeof(INPUT));
         break;
-        
+
     case sf::Event::MouseButtonPressed:
         // Nhấn chuột
-        mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
+        SetCursorPos(x, y);
+        if (event.mouseButton.button == sf::Mouse::Left)
+            mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
+        else
+            mouse_event(MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0);
         break;
 
     case sf::Event::MouseButtonReleased:
         // Nhả chuột
-        mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
+        SetCursorPos(x, y);
+        if (event.mouseButton.button == sf::Mouse::Right)
+            mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
+        else
+            mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, 0);
         break;
 
-        // Thêm các trường hợp khác nếu cần thiết (ví dụ: di chuyển chuột, scroll chuột, v.v.)*/
+    case sf::Event::MouseMoved:
+        // Di chuyển chuột
+        SetCursorPos(x, y);
+        break;
+
+    case sf::Event::MouseWheelScrolled:
+        // Lăn chuột
+        input.type = INPUT_MOUSE;
+        input.mi.dx = 0;
+        input.mi.dy = 0;
+        input.mi.mouseData = static_cast<DWORD>(event.mouseWheelScroll.delta * WHEEL_DELTA);
+        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        SendInput(1, &input, sizeof(INPUT));
+        break;
+
+        // Thêm các trường hợp khác nếu cần thiết (ví dụ: scroll chuột ngang, v.v.)
     }
 }
+
 
 int Send_Screen(SOCKET clientSocket)
 {
