@@ -43,6 +43,11 @@ bool TheOne(sf::Event event)
     switch (event.type) {
     case sf::Event::KeyPressed: return 1;
     case sf::Event::KeyReleased: return 1;
+    case sf::Event::MouseButtonPressed: return 1;
+    case sf::Event::MouseButtonReleased: return 1;
+    case sf::Event::MouseMoved: return 1;
+    case sf::Event::MouseWheelScrolled: return 1;
+
 
         default: return 0; // Giá trị mặc định nếu không có ánh xạ
     }
