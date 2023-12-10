@@ -79,6 +79,34 @@ int Recv_Screen(SOCKET serverSocket, sf::RenderWindow& window, char* addr)
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
+            
+            switch (event.type) {
+            case sf::Event::Closed:
+                window.close();
+                break;
+            case sf::Event::KeyPressed:
+                std::cout << "Key Pressed: " << event.key.code << std::endl;
+                break;
+            case sf::Event::KeyReleased:
+                std::cout << "Key Released: " << event.key.code << std::endl;
+                break;
+            case sf::Event::MouseButtonPressed:
+                std::cout << "Mouse Button Pressed: " << event.mouseButton.button << std::endl;
+                break;
+            case sf::Event::MouseButtonReleased:
+                std::cout << "Mouse Button Released: " << event.mouseButton.button << std::endl;
+                break;
+            case sf::Event::MouseMoved:
+                std::cout << "Mouse Moved: x=" << event.mouseMove.x << ", y=" << event.mouseMove.y << std::endl;
+                break;
+            case sf::Event::MouseWheelScrolled:
+                std::cout << "Mouse Wheel Scrolled: delta=" << event.mouseWheelScroll.delta << std::endl;
+                break;
+            default:
+                // Các sự kiện khác
+                break;
+            }
+
             if ( TheOne(event) && socket.send(&event, sizeof(event)) != sf::Socket::Done) {
                 std::cerr << "Error sending event to server\n";
             }
