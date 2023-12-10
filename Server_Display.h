@@ -6,20 +6,20 @@ void processEvent(const sf::Event& event) {
     INPUT input;
     input.type = INPUT_KEYBOARD;
 
-    int virtualKeyCode = MapSFMLKeyToVirtualKey(event.key.code);
-
     // Kiểm tra sự kiện từ sf::Event
     switch (event.type) {
     case sf::Event::KeyPressed:
         // Bấm phím
-        input.ki.wVk = static_cast<WORD>(virtualKeyCode);
+        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);        
+        std::cerr << "Press: " << int(input.ki.wVk) << '\n';
         input.ki.dwFlags = 0; // Keydown
         SendInput(1, &input, sizeof(INPUT));
         break;
 
     case sf::Event::KeyReleased:
         // Nhả phím
-        input.ki.wVk = static_cast<WORD>(virtualKeyCode);
+        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);        
+        std::cerr << "Release: " << int(input.ki.wVk) << '\n';
         input.ki.dwFlags = KEYEVENTF_KEYUP;
         SendInput(1, &input, sizeof(INPUT));
         break;
