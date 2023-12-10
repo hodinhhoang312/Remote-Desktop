@@ -38,6 +38,17 @@ cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
 
 cv::Mat receivedImage;
 
+bool TheOne(sf::Event event)
+{
+    switch (event.type) {
+    case sf::Event::KeyPressed: return 1;
+    case sf::Event::KeyReleased: return 1;
+
+        default: return 0; // Giá trị mặc định nếu không có ánh xạ
+    }
+    return 0;
+}
+
 int Recv_Screen(SOCKET serverSocket, sf::RenderWindow& window, char* addr)
 {
 
@@ -63,6 +74,9 @@ int Recv_Screen(SOCKET serverSocket, sf::RenderWindow& window, char* addr)
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
+            if ( TheOne(event) && socket.send(&event, sizeof(event)) != sf::Socket::Done) {
+                std::cerr << "Error sending event to server\n";
+            }
         }
 
         if (socket.send(&event, sizeof(event)) != sf::Socket::Done) {
