@@ -11,8 +11,8 @@ void processEvent(const sf::Event& event) {
     int x = event.mouseButton.x * 100 / resize;
     int y = event.mouseButton.y * 100 / resize;
 
-    int mouseX = event.mouseMove.x;
-    int mouseY = event.mouseMove.y;
+    int mouseX = event.mouseMove.x * 100 / resize;
+    int mouseY = event.mouseMove.y * 100 / resize;
 
     // Kiểm tra sự kiện từ sf::Event
     switch (event.type) {
