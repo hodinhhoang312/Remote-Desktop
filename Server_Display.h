@@ -5,31 +5,6 @@
 #include <Windows.h>
 
 void processEvent(const sf::Event& event) {
-
-    switch (event.type) {
-    case sf::Event::KeyPressed:
-        std::cout << "Key Pressed: " << event.key.code << std::endl;
-        break;
-    case sf::Event::KeyReleased:
-        std::cout << "Key Released: " << event.key.code << std::endl;
-        break;
-    case sf::Event::MouseButtonPressed:
-        std::cout << "Mouse Button Pressed: " << event.mouseButton.button << std::endl;
-        break;
-    case sf::Event::MouseButtonReleased:
-        std::cout << "Mouse Button Released: " << event.mouseButton.button << std::endl;
-        break;
-    case sf::Event::MouseMoved:
-        std::cout << "Mouse Moved: x=" << event.mouseMove.x << ", y=" << event.mouseMove.y << std::endl;
-        break;
-    case sf::Event::MouseWheelScrolled:
-        std::cout << "Mouse Wheel Scrolled: delta=" << event.mouseWheelScroll.delta << std::endl;
-        break;
-    default:
-        // Các sự kiện khác
-        break;
-    }
-
     INPUT input;
 
     input.type = INPUT_KEYBOARD;
@@ -64,7 +39,7 @@ void processEvent(const sf::Event& event) {
     case sf::Event::MouseButtonReleased:
         // Nhả chuột
         SetCursorPos(x, y);
-        if (event.mouseButton.button == sf::Mouse::Right)
+        if (event.mouseButton.button == sf::Mouse::Left)
             mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
         else
             mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, 0);
@@ -115,8 +90,6 @@ int Send_Screen(SOCKET clientSocket)
     }
     while (1)
     {
-        
-        
         // Nhận dữ liệu từ client
         char buffer[1024]; // Định kích thước buffer, có thể làm linh hoạt hơn
         std::size_t received;
