@@ -1,161 +1,143 @@
 #pragma once
 #include "Tools.h"
 #include "Capture.h"
-#include <winuser.h>
-#include <Windows.h>
 
-void processEvent(const sf::Event& event) {
+cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
+    int totalSize = 0;
 
-    switch (event.type) {
-    case sf::Event::KeyPressed:
-        std::cout << "Key Pressed: " << event.key.code << std::endl;
-        break;
-    case sf::Event::KeyReleased:
-        std::cout << "Key Released: " << event.key.code << std::endl;
-        break;
-    case sf::Event::MouseButtonPressed:
-        std::cout << "Mouse Button Pressed: " << event.mouseButton.button << std::endl;
-        break;
-    case sf::Event::MouseButtonReleased:
-        std::cout << "Mouse Button Released: " << event.mouseButton.button << std::endl;
-        break;
-    case sf::Event::MouseMoved:
-        std::cout << "Mouse Moved: x=" << event.mouseMove.x << ", y=" << event.mouseMove.y << std::endl;
-        break;
-    case sf::Event::MouseWheelScrolled:
-        std::cout << "Mouse Wheel Scrolled: delta=" << event.mouseWheelScroll.delta << std::endl;
-        break;
-    default:
-        // Các sự kiện khác
-        break;
+    // Nhận kích thước dữ liệu
+    if (recv(serverSocket, (char*)&totalSize, sizeof(totalSize), 0) == SOCKET_ERROR) {
+        // Xử lý lỗi khi nhận kích thước dữ liệu
+        return cv::Mat(); // Trả về một ma trận rỗng
     }
 
-    INPUT input;
+    std::vector<uchar> buffer;
+    buffer.reserve(totalSize);
 
-    input.type = INPUT_KEYBOARD;
-    int x = event.mouseButton.x * 100 / resize;
-    int y = event.mouseButton.y * 100 / resize;
+    int bytesReceived = 0;
+    while (bytesReceived < totalSize) {
+        int remaining = totalSize - bytesReceived;
+        int chunkSize = remaining > 4096 ? 4096 : remaining; // Kích thước chunk mỗi lần nhận
 
-    // Kiểm tra sự kiện từ sf::Event
-    switch (event.type) {
-    case sf::Event::KeyPressed:
-        // Bấm phím
-        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);
-        input.ki.dwFlags = 0; // Keydown
-        SendInput(1, &input, sizeof(INPUT));
-        break;
+        std::vector<uchar> tempBuffer(chunkSize);
+        int received = recv(serverSocket, reinterpret_cast<char*>(tempBuffer.data()), chunkSize, 0);
 
-    case sf::Event::KeyReleased:
-        // Nhả phím
-        input.ki.wVk = mapSfmlKeyToVirtualKey(event.key.code);
-        input.ki.dwFlags = KEYEVENTF_KEYUP;
-        SendInput(1, &input, sizeof(INPUT));
-        break;
+        if (received <= 0) {
+            // Xử lý lỗi hoặc kết thúc kết nối
+            return cv::Mat(); // Trả về một ma trận rỗng
+        }
 
-    case sf::Event::MouseButtonPressed:
-        // Nhấn chuột
-        SetCursorPos(x, y);
-        if (event.mouseButton.button == sf::Mouse::Left)
-            mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
-        else
-            mouse_event(MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0);
-        break;
-
-    case sf::Event::MouseButtonReleased:
-        // Nhả chuột
-        SetCursorPos(x, y);
-        if (event.mouseButton.button == sf::Mouse::Right)
-            mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
-        else
-            mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, 0);
-        break;
-
-    /*case sf::Event::MouseMoved:
-        // Di chuyển chuột
-        SetCursorPos(x, y);
-        break;
-        
-    case sf::Event::MouseWheelScrolled:
-        // Lăn chuột
-        input.type = INPUT_MOUSE;
-        input.mi.dx = 0;
-        input.mi.dy = 0;
-        input.mi.mouseData = static_cast<DWORD>(event.mouseWheelScroll.delta * WHEEL_DELTA);
-        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
-        SendInput(1, &input, sizeof(INPUT));
-        break;
-*/
-        // Thêm các trường hợp khác nếu cần thiết (ví dụ: scroll chuột ngang, v.v.)
+        bytesReceived += received;
+        buffer.insert(buffer.end(), tempBuffer.begin(), tempBuffer.begin() + received);
     }
+
+    cv::Mat image = cv::imdecode(buffer, cv::IMREAD_COLOR); // Tạo ma trận hình ảnh từ dữ liệu nhận được
+
+    return image; // Trả về ma trận hình ảnh đã nhận
 }
 
+cv::Mat receivedImage;
 
-int Send_Screen(SOCKET clientSocket)
+bool TheOne(sf::Event event)
 {
+    switch (event.type) {
+    case sf::Event::KeyPressed: return 1;
+    case sf::Event::KeyReleased: return 1;
+    case sf::Event::MouseButtonPressed: return 1;
+    case sf::Event::MouseButtonReleased: return 1;
+  //  case sf::Event::MouseMoved: return 1;
+   // case sf::Event::MouseWheelScrolled: return 1;
+
+
+        default: return 0; // Giá trị mặc định nếu không có ánh xạ
+    }
+    return 0;
+}
+
+int Recv_Screen(SOCKET serverSocket, sf::RenderWindow& window, char* addr)
+{
+
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         std::cerr << "Failed to initialize Winsock.\n";
         return 1;
     }
 
-    sf::TcpListener listener;
-    if (listener.listen(312) != sf::Socket::Done) {
-        std::cerr << "Failed to listen on port 312.\n";
-        WSACleanup();
-        return 1;
-    }
-
-    std::cout << "Server is listening on port 312...\n";
-
+    std::cerr << "Try to connect to port 312!\n";
     sf::TcpSocket socket;
-    if (listener.accept(socket) != sf::Socket::Done) {
-        std::cerr << "Failed to accept client connection.\n";
+    if (socket.connect(addr, 312) != sf::Socket::Done) {
+        std::cerr << "Failed to connect to server.\n";
         WSACleanup();
         return 1;
     }
-    while (1)
-    {
+
+    std::cerr << "Connected!\n";
+
+    while (window.isOpen()) {
+
         sf::Event event;
-        std::size_t receivedSize;
-        if (socket.receive(&event, sizeof(event), receivedSize) != sf::Socket::Done) {
-            std::cerr << "Error receiving event from client\n";
-        }
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+            
+            switch (event.type) {
+            case sf::Event::Closed:
+                window.close();
+                break;
+            case sf::Event::KeyPressed:
+                std::cout << "Key Pressed: " << event.key.code << std::endl;
+                break;
+            case sf::Event::KeyReleased:
+                std::cout << "Key Released: " << event.key.code << std::endl;
+                break;
+            case sf::Event::MouseButtonPressed:
+                std::cout << "Mouse Button Pressed: " << event.mouseButton.button << std::endl;
+                break;
+            case sf::Event::MouseButtonReleased:
+                std::cout << "Mouse Button Released: " << event.mouseButton.button << std::endl;
+                break;
+            case sf::Event::MouseMoved:
+                std::cout << "Mouse Moved: x=" << event.mouseMove.x << ", y=" << event.mouseMove.y << std::endl;
+                break;
+            case sf::Event::MouseWheelScrolled:
+                std::cout << "Mouse Wheel Scrolled: delta=" << event.mouseWheelScroll.delta << std::endl;
+                break;
+            default:
+                // Các sự kiện khác
+                break;
+            }
 
-        processEvent(event);
-
-
-        cv::Mat screenshot = Capture_Screen(); // Chup man hinh
-
-        reduceSize(screenshot, resize);
-
-        if (!screenshot.empty()) {
-
-            int bytesSend = sendMatOverSocket(screenshot, clientSocket);
-
-            if (bytesSend > 0);
-            // std::cerr << "Send Successful! BytesSend : " << bytesSend << ".\n";
-            else
-            {
-                std::cerr << "Cannot Send Image!\n";
-                return 2;
+            if ( TheOne(event) && socket.send(&event, sizeof(event)) != sf::Socket::Done) {
+                std::cerr << "Error sending event to server\n";
             }
         }
-        else {
-            std::cerr << "Error: Could not read the image." << std::endl;
+
+        if (socket.send(&event, sizeof(event)) != sf::Socket::Done) {
+            std::cerr << "Error sending event to server\n";
         }
+
+        window.clear();
+
+        receivedImage = receiveMatFromSocket(serverSocket);
+
+        //  std::cerr << "Image Received!\n";
+
+        sf::Image image = matToImage(receivedImage);
+        sf::Texture texture = imageToTexture(image);
+        sf::Sprite sprite(texture);
+
+        window.draw(sprite);
+        window.display();
     }
 
     socket.disconnect();
-    listener.close();
     WSACleanup();
 
-    return 0;
+    return 1;
 }
 
-int Server(sf::RenderWindow& window, bool& ServerConnected)
+int Client(sf::RenderWindow& window, char* SERVER_IP_ADDRESS)
 {
-    if (ServerConnected)
-        return 1;
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         std::cerr << "Failed to initialize Winsock." << std::endl;
@@ -172,76 +154,123 @@ int Server(sf::RenderWindow& window, bool& ServerConnected)
 
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(12345); // Use port 12345
+    serverAddr.sin_port = htons(12345); // Sử dụng cùng một cổng (port 12345)
 
-    // Bind an address and port to the socket
-    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        std::cerr << "Failed to bind an address and port to the socket." << std::endl;
-        closesocket(serverSocket);
-        WSACleanup();
+    // Connect to the server
+    serverAddr.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS);
+    if (connect(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+        std::cerr << "Failed to connect to the server." << std::endl;
         return 1;
     }
     else
-        std::cerr << "Successed to bind an address and port to the socket.\n";
-
-    // Listen for incoming connections
-    if (listen(serverSocket, 5) == SOCKET_ERROR) {
-        std::cerr << "Failed to listen for incoming connections." << std::endl;
-        closesocket(serverSocket);
-        WSACleanup();
-        return 1;
+    {
+        std::cout << "Connected to the server!" << std::endl;
     }
 
-    std::cout << "Waiting for incoming connections..." << std::endl;
+    //Receive data
 
-    // Accept a connection
-    SOCKET clientSocket;
-    sockaddr_in clientAddr;
-    int clientAddrLen = sizeof(clientAddr);
-    clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrLen);
-    if (clientSocket == INVALID_SOCKET) {
-        std::cerr << "Failed to accept a connection." << std::endl;
-        closesocket(serverSocket);
-        WSACleanup();
-        return 1;
-    }
+    bool ClientConnected = true;
+    // std::thread THREAD_SEND(Send_Event, std::ref(window), SERVER_IP_ADDRESS, std::ref(ClientConnected));
+     //THREAD_SEND.detach();
 
-    std::cout << "Connection established!" << std::endl;
+    Recv_Screen(serverSocket, window, SERVER_IP_ADDRESS);
 
-    ServerConnected = 1;
-    //Send Picture
-
-    //std::thread THREAD_RECV(Receive_Event,std::ref(window), std::ref(ServerConnected));
-   // THREAD_RECV.detach();
-
-    Send_Screen(clientSocket);
-
-    // Close the sockets
-    closesocket(clientSocket);
+    // Close the socket
     closesocket(serverSocket);
-    WSACleanup();
 
-    ServerConnected = 0;
+    ClientConnected = false;
+    WSACleanup();
 
     return 0;
 }
 
-void Server_Display_Screen(sf::RenderWindow& window, sf::Event event, std::string txt, bool& Server_On)
+void Client_Display_Screen(sf::RenderWindow& window, sf::Event event, bool& Client_On)
 {
+    sf::Font font;
+    if (!font.loadFromFile("Resources/Fonts/arial.ttf")) {
+        std::cerr << "Error loading font\n";
+        return;
+    }
+
+    sf::Text text;
+    text.setFont(font);
+    text.setCharacterSize(20);
+    text.setPosition(10, 50);
+    text.setFillColor(sf::Color::Red); // Đặt màu cho văn bản
+    text.setString("Enter IP Address: ");
+
+    std::string ipAddress;
+
+    bool is_Done = 0;
+
+    while (window.isOpen()) {
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+            }
+            if (event.text.unicode == 13)
+            {
+                window.clear();
+                is_Done = 1;
+                break;
+            }
+            else
+                if (event.type == sf::Event::TextEntered) {
+                    if (event.text.unicode < 128 && event.text.unicode != 8) {
+                        // Kiểm tra ký tự nhập vào, loại bỏ ký tự backspace (8)
+                        ipAddress += static_cast<char>(event.text.unicode);
+                    }
+                    else if (event.text.unicode == 8 && !ipAddress.empty()) {
+                        // Xóa ký tự cuối cùng nếu là backspace và xâu không rỗng
+                        ipAddress.pop_back();
+                    }
+                }
+
+            window.clear();
+
+            std::cerr << is_Done << '\n';
+            Draw_Background(window, "Resources/Image/background.png");
+
+            bool empy = 0;
+            Draw_Button(window, event, empy, 0, 0);
+
+            Draw_Text(window, "Back", 30, sf::Color::Black, 0, 0);
+
+            if (empy)
+            {
+                Client_On = 0;
+                std::cerr << "Button Clicked Exit\n";
+                window.clear();
+                return;
+            }
+
+            // Hiển thị IP đã nhập
+            text.setString("Enter IP Address: " + ipAddress);
+
+            window.draw(text);
+            window.display();
+
+            if (is_Done)
+                break;
+        }
+        if (is_Done)
+            break;
+    }
+
+    // Chuyển đổi std::string sang char*
+    char* ipAddressChar = new char[16];
+    for (int i = 0; i < 16; ++i)ipAddressChar[i] = '\0';
+    std::strcpy(ipAddressChar, ipAddress.c_str());
+
     window.clear();
 
-    //Draw_Background(window, "Resources/Image/background.png");
+    printf("%s\n", ipAddressChar);
 
-    Draw_Text(window, txt, 30, sf::Color::Black, width / 2 - 100, height / 2 - 200);
+    Client(window, ipAddressChar);
 
-    bool empy = 0;
-    Draw_Button(window, event, empy, 0, 0);
+    delete[] ipAddressChar;
 
-    Draw_Text(window, "Back", 30, sf::Color::Black, 0, 0);
-
-    if (empy)
-        Server_On = false;
+    Client_On = 0;
 
     return;
 }
