@@ -70,22 +70,6 @@ void processEvent(const sf::Event& event) {
             mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, 0);
         break;
 
-    /*case sf::Event::MouseMoved:
-        // Di chuyển chuột
-        SetCursorPos(x, y);
-        break;
-        
-    case sf::Event::MouseWheelScrolled:
-        // Lăn chuột
-        input.type = INPUT_MOUSE;
-        input.mi.dx = 0;
-        input.mi.dy = 0;
-        input.mi.mouseData = static_cast<DWORD>(event.mouseWheelScroll.delta * WHEEL_DELTA);
-        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
-        SendInput(1, &input, sizeof(INPUT));
-        break;
-*/
-        // Thêm các trường hợp khác nếu cần thiết (ví dụ: scroll chuột ngang, v.v.)
     }
 }
 
@@ -210,10 +194,6 @@ int Server(sf::RenderWindow& window, bool& ServerConnected)
     std::cout << "Connection established!" << std::endl;
 
     ServerConnected = 1;
-    //Send Picture
-
-    //std::thread THREAD_RECV(Receive_Event,std::ref(window), std::ref(ServerConnected));
-   // THREAD_RECV.detach();
 
     Send_Screen(clientSocket);
 
@@ -231,7 +211,7 @@ void Server_Display_Screen(sf::RenderWindow& window, sf::Event event, std::strin
 {
     window.clear();
 
-    //Draw_Background(window, "Resources/Image/background.png");
+    Draw_Background(window, "Resources/Image/background.png");
 
     Draw_Text(window, txt, 30, sf::Color::Black, width / 2 - 100, height / 2 - 200);
 
