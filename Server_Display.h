@@ -70,6 +70,22 @@ void processEvent(const sf::Event& event) {
             mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, 0);
         break;
 
+    case sf::Event::MouseMoved:
+        // Di chuyển chuột
+        SetCursorPos(x, y);
+        break;
+        
+    case sf::Event::MouseWheelScrolled:
+        // Lăn chuột
+        input.type = INPUT_MOUSE;
+        input.mi.dx = 0;
+        input.mi.dy = 0;
+        input.mi.mouseData = static_cast<DWORD>(event.mouseWheelScroll.delta * WHEEL_DELTA);
+        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        SendInput(1, &input, sizeof(INPUT));
+        break;
+
+        // Thêm các trường hợp khác nếu cần thiết (ví dụ: scroll chuột ngang, v.v.)
     }
 }
 
@@ -99,14 +115,30 @@ int Send_Screen(SOCKET clientSocket)
     }
     while (1)
     {
-        sf::Event event;
-        std::size_t receivedSize;
-        if (socket.receive(&event, sizeof(event), receivedSize) != sf::Socket::Done) {
-            std::cerr << "Error receiving event from client\n";
+        
+        
+        // Nhận dữ liệu từ client
+        char buffer[1024]; // Định kích thước buffer, có thể làm linh hoạt hơn
+        std::size_t received;
+        if (socket.receive(buffer, sizeof(buffer), received) != sf::Socket::Done) {
+            std::cerr << "Error to receive event!!!" << std::endl;
         }
+        else {
+            // Chuyển đổi dữ liệu nhận được thành số nguyên
+            int receivedNumber = std::stoi(buffer);
+            std::cout << "Number of event received: " << receivedNumber << std::endl;
+            for (int i = 1; i <= receivedNumber; ++i)
+            {
+                sf::Event event;
+                std::size_t receivedSize;
+                if (socket.receive(&event, sizeof(event), receivedSize) != sf::Socket::Done) {
+                    std::cerr << "Error receiving event from client\n";
+                }
+                else
+                    processEvent(event);
 
-        processEvent(event);
-
+            }
+        }
 
         cv::Mat screenshot = Capture_Screen(); // Chup man hinh
 
@@ -194,6 +226,10 @@ int Server(sf::RenderWindow& window, bool& ServerConnected)
     std::cout << "Connection established!" << std::endl;
 
     ServerConnected = 1;
+    //Send Picture
+
+    //std::thread THREAD_RECV(Receive_Event,std::ref(window), std::ref(ServerConnected));
+   // THREAD_RECV.detach();
 
     Send_Screen(clientSocket);
 
