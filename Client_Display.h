@@ -1,6 +1,8 @@
 #pragma once
 #include "Tools.h"
 #include "Capture.h"
+#include <queue>
+
 
 cv::Mat receiveMatFromSocket(SOCKET serverSocket) {
     int totalSize = 0;
@@ -45,8 +47,8 @@ bool TheOne(sf::Event event)
     case sf::Event::KeyReleased: return 1;
     case sf::Event::MouseButtonPressed: return 1;
     case sf::Event::MouseButtonReleased: return 1;
-    case sf::Event::MouseMoved: return 1;
-    case sf::Event::MouseWheelScrolled: return 1;
+  //  case sf::Event::MouseMoved: return 1;
+   // case sf::Event::MouseWheelScrolled: return 1;
 
 
         default: return 0; // Giá trị mặc định nếu không có ánh xạ
@@ -73,17 +75,71 @@ int Recv_Screen(SOCKET serverSocket, sf::RenderWindow& window, char* addr)
 
     std::cerr << "Connected!\n";
 
+    std::queue<sf::Event> qu;
+
     while (window.isOpen()) {
 
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
+            
+            switch (event.type) {
+            case sf::Event::Closed:
+                window.close();
+                break;
+            case sf::Event::KeyPressed:
+                std::cout << "Key Pressed: " << event.key.code << std::endl;
+                break;
+            case sf::Event::KeyReleased:
+                std::cout << "Key Released: " << event.key.code << std::endl;
+                break;
+            case sf::Event::MouseButtonPressed:
+                std::cout << "Mouse Button Pressed: " << event.mouseButton.button << std::endl;
+                break;
+            case sf::Event::MouseButtonReleased:
+                std::cout << "Mouse Button Released: " << event.mouseButton.button << std::endl;
+                break;
+            case sf::Event::MouseMoved:
+                std::cout << "Mouse Moved: x=" << event.mouseMove.x << ", y=" << event.mouseMove.y << std::endl;
+                break;
+            case sf::Event::MouseWheelScrolled:
+                std::cout << "Mouse Wheel Scrolled: delta=" << event.mouseWheelScroll.delta << std::endl;
+                break;
+            default:
+                // Các sự kiện khác
+                break;
+            }
 
-            if ( TheOne(event) && socket.send(&event, sizeof(event)) != sf::Socket::Done) {
+            if ( TheOne(event) ) {
+                qu.push(event);
+            }
+        }
+        
+        int numberToSend = qu.size();
+
+        // Chuyển đổi số nguyên thành chuỗi ký tự
+        std::string numberAsString = std::to_string(numberToSend);
+
+        // Gửi dữ liệu qua socket
+        if (socket.send(numberAsString.c_str(), numberAsString.size() + 1) != sf::Socket::Done) {
+            std::cerr << "Error to send event!" << std::endl;
+        }
+        else {
+            std::cout << "Sending number of event successfully : " << numberToSend << std::endl;
+        }
+
+        while (!qu.empty())
+        {
+            sf::Event event = qu.front();
+            qu.pop();
+
+            if (socket.send(&event, sizeof(event)) != sf::Socket::Done){
                 std::cerr << "Error sending event to server\n";
             }
         }
+
+
 
         window.clear();
 
