@@ -70,11 +70,11 @@ void processEvent(const sf::Event& event) {
             mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, 0);
         break;
 
-    case sf::Event::MouseMoved:
+    /*case sf::Event::MouseMoved:
         // Di chuyển chuột
         SetCursorPos(x, y);
         break;
-
+        
     case sf::Event::MouseWheelScrolled:
         // Lăn chuột
         input.type = INPUT_MOUSE;
@@ -84,7 +84,7 @@ void processEvent(const sf::Event& event) {
         input.mi.dwFlags = MOUSEEVENTF_WHEEL;
         SendInput(1, &input, sizeof(INPUT));
         break;
-
+*/
         // Thêm các trường hợp khác nếu cần thiết (ví dụ: scroll chuột ngang, v.v.)
     }
 }
