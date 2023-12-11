@@ -11,6 +11,9 @@ void processEvent(const sf::Event& event) {
     int x = event.mouseButton.x * 100 / resize;
     int y = event.mouseButton.y * 100 / resize;
 
+    int mouseX = event.mouseMove.x;
+    int mouseY = event.mouseMove.y;
+
     // Kiểm tra sự kiện từ sf::Event
     switch (event.type) {
     case sf::Event::KeyPressed:
@@ -47,7 +50,7 @@ void processEvent(const sf::Event& event) {
 
     case sf::Event::MouseMoved:
         // Di chuyển chuột
-        SetCursorPos(x, y);
+        SetCursorPos(mouseX, mouseY);
         break;
         
     case sf::Event::MouseWheelScrolled:
